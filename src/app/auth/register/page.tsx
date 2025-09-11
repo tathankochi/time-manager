@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Eye, EyeOff, Mail, Lock, User, School } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,9 +32,40 @@ export default function RegisterPage() {
     university: "",
     major: "",
   });
+  const router = useRouter();
 
   const handleSubmit = (e: React.FormEvent) => {
-    //await await register(formData);
+    e.preventDefault();
+
+    try {
+      const usersKey = "tm_users";
+      const raw = typeof window !== "undefined" ? localStorage.getItem(usersKey) : null;
+      const users: Array<any> = raw ? JSON.parse(raw) : [];
+
+      const email = formData.email.trim().toLowerCase();
+      if (users.some((u) => u.email === email)) {
+        toast.error("Email đã tồn tại", { description: "Vui lòng dùng email khác." });
+        return;
+      }
+
+      const newUser = {
+        email,
+        password: formData.password,
+        fullName: formData.fullName,
+        dateOfBirth: formData.dateOfBirth,
+        university: formData.university,
+        major: formData.major,
+      };
+
+      users.push(newUser);
+      localStorage.setItem(usersKey, JSON.stringify(users));
+
+      toast.success("Tạo tài khoản thành công", { description: "Bạn sẽ được chuyển đến trang đăng nhập." });
+      router.push("/auth/login");
+    } catch (err) {
+      console.error(err);
+      toast.error("Đã xảy ra lỗi", { description: "Vui lòng thử lại sau." });
+    }
   };
 
   return (
