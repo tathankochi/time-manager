@@ -35,6 +35,7 @@ export interface TaskState {
     getImportantTasks: () => Task[];
     checkTimeConflict: (date: string, startTime: string, endTime: string, excludeTaskId?: string) => Task | null;
     getTasksForWeek: (startDate: Date) => { [key: string]: Task[] };
+    calculateProductivityScore: () => number;
     setCurrentUserId: (userId: string | null) => void;
 }
 
@@ -250,7 +251,7 @@ export function TaskProvider({ children }: TaskProviderProps) {
     const getImportantTasks = (): Task[] => {
         if (!currentUserId) return [];
         return getUserTasks().filter(task =>
-            task.priority === 'high' || task.priority === 'medium'
+            task.priority === 'high'
         );
     };
 
@@ -311,6 +312,58 @@ export function TaskProvider({ children }: TaskProviderProps) {
         return weekTasks;
     };
 
+    // Tính điểm năng suất dựa trên các yếu tố
+    const calculateProductivityScore = (): number => {
+        if (!currentUserId) return 0;
+
+        const userTasks = getUserTasks();
+        if (userTasks.length === 0) return 0;
+
+        const now = new Date();
+        const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+        // Lọc tasks trong 7 ngày qua
+        const recentTasks = userTasks.filter(task =>
+            task.createdAt >= oneWeekAgo ||
+            (task.deadline && new Date(task.deadline) >= oneWeekAgo)
+        );
+
+        if (recentTasks.length === 0) return 0;
+
+        // 1. Tỷ lệ hoàn thành task (60%)
+        const completedTasks = recentTasks.filter(task => task.completed);
+        const completionRate = (completedTasks.length / recentTasks.length) * 100;
+
+        // 2. Tỷ lệ task quan trọng hoàn thành (25%)
+        const importantTasks = recentTasks.filter(task =>
+            task.priority === 'high' || task.priority === 'medium'
+        );
+        const completedImportantTasks = importantTasks.filter(task => task.completed);
+        const importantCompletionRate = importantTasks.length > 0 ?
+            (completedImportantTasks.length / importantTasks.length) * 100 : 100;
+
+        // 3. Tần suất hoạt động (15%) - dựa trên số ngày có task trong tuần
+        const activeDays = new Set();
+        recentTasks.forEach(task => {
+            if (task.createdAt) {
+                activeDays.add(task.createdAt.toDateString());
+            }
+            if (task.updatedAt) {
+                activeDays.add(task.updatedAt.toDateString());
+            }
+        });
+        const activityRate = (activeDays.size / 7) * 100;
+
+        // Tính điểm tổng hợp với trọng số
+        const productivityScore =
+            (completionRate * 0.6) +
+            (importantCompletionRate * 0.25) +
+            (activityRate * 0.15);
+
+        // Làm tròn và giới hạn trong khoảng 0-100
+        return Math.min(100, Math.max(0, Math.round(productivityScore)));
+    };
+
     // Giá trị context
     const value: TaskState = {
         tasks: getUserTasks(),
@@ -326,6 +379,7 @@ export function TaskProvider({ children }: TaskProviderProps) {
         getImportantTasks,
         checkTimeConflict,
         getTasksForWeek,
+        calculateProductivityScore,
         setCurrentUserId
     };
 
