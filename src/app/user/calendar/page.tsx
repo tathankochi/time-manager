@@ -6,19 +6,31 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useTask } from "@/lib/contexts/TaskContext";
-import { AlertCircle, CheckCircle2, Circle, Clock, Edit, Filter, Plus, Search, Trash2 } from "lucide-react";
+import { AlertCircle, CalendarIcon, CheckCircle2, ChevronLeft, ChevronRight, Circle, Clock, Edit, Filter, Plus, Search, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 export default function CalendarPage() {
-    const { tasks, deleteTask, toggleTask } = useTask();
+    const [currentWeekStart, setCurrentWeekStart] = useState(() => {
+        const today = new Date();
+        const dayOfWeek = today.getDay();
+        const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Make Monday the first day
+        const monday = new Date(today);
+        monday.setDate(today.getDate() + mondayOffset);
+        monday.setHours(0, 0, 0, 0);
+        //Trả về ngày thứ 2 gần nhất
+        return monday;
+    });
+    const { tasks, deleteTask, toggleTask, getTasksForWeek } = useTask();
     const [showTaskForm, setShowTaskForm] = useState(false);
-    const [selectedTask, setSelectedTask] = useState(null);
+    const [selectedTask, setSelectedTask] = useState<any>(null);
     const [showFilters, setShowFilters] = useState(false);
     const [showTaskDetail, setShowTaskDetail] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [filterPriority, setFilterPriority] = useState<string>('all');
     const [filterCategory, setFilterCategory] = useState<string>('all');
+    // Get tasks for current week
+    const allWeekTasks = getTasksForWeek(currentWeekStart);
     // Task statistics
     const taskStats = {
         total: tasks.length,
@@ -73,6 +85,47 @@ export default function CalendarPage() {
             default: return 'Thấp';
         }
     };
+
+    // Generate week days
+    const weekDays: Date[] = [];
+    for (let i = 0; i < 7; i++) {
+        const date = new Date(currentWeekStart);
+        date.setDate(currentWeekStart.getDate() + i);
+        weekDays.push(date);
+    }
+
+    // Navigate weeks
+    const goToCurrentWeek = () => {
+        const today = new Date();
+        const dayOfWeek = today.getDay();
+        const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+        const monday = new Date(today);
+        monday.setDate(today.getDate() + mondayOffset);
+        monday.setHours(0, 0, 0, 0);
+        setCurrentWeekStart(monday);
+    };
+    const goToPreviousWeek = () => {
+        const newWeekStart = new Date(currentWeekStart);
+        newWeekStart.setDate(currentWeekStart.getDate() - 7);
+        setCurrentWeekStart(newWeekStart);
+    };
+
+    const goToNextWeek = () => {
+        const newWeekStart = new Date(currentWeekStart);
+        newWeekStart.setDate(currentWeekStart.getDate() + 7);
+        setCurrentWeekStart(newWeekStart);
+    };
+    const formatWeekRange = () => {
+        const endDate = new Date(currentWeekStart);
+        endDate.setDate(currentWeekStart.getDate() + 6);
+
+        return `${currentWeekStart.getDate()}/${currentWeekStart.getMonth() + 1} - ${endDate.getDate()}/${endDate.getMonth() + 1}/${endDate.getFullYear()}`;
+    };
+    // Generate time slots (24 hours)
+    const timeSlots = [];
+    for (let hour = 0; hour < 24; hour++) {
+        timeSlots.push(`${hour.toString().padStart(2, '0')}:00`);
+    }
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -151,6 +204,126 @@ export default function CalendarPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Week Calendar */}
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center justify-between">
+                        <CardTitle className="text-xl flex items-center space-x-2">
+                            <CalendarIcon className="h-5 w-5" />
+                            <span>Tuần {formatWeekRange()}</span>
+                        </CardTitle>
+                        <div className="flex items-center space-x-2">
+                            <Button variant="outline" size="sm" onClick={goToPreviousWeek}>
+                                <ChevronLeft className="h-4 w-4" />
+                                Tuần trước
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={goToCurrentWeek}>
+                                Tuần này
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={goToNextWeek}>
+                                Tuần sau
+                                <ChevronRight className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    {/* Week Calendar Grid */}
+                    <div className="grid grid-cols-8 gap-1 mb-4">
+                        {/* Time column header */}
+                        <div className="text-center font-medium text-sm text-gray-500 p-2">
+                            Giờ
+                        </div>
+
+                        {/* Day headers */}
+                        {weekDays.map((day, index) => (
+                            <div key={index} className="text-center font-medium text-sm p-2 bg-gray-50 dark:bg-gray-800 rounded">
+                                <div className="text-gray-900 dark:text-white">
+                                    {day.toLocaleDateString('vi-VN', { weekday: 'short' })}
+                                </div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                    {day.getDate()}/{day.getMonth() + 1}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Calendar Grid */}
+                    <div className="max-h-96 overflow-y-auto border rounded-lg">
+                        <div className="grid grid-cols-8 gap-px bg-gray-200 dark:bg-gray-700">
+                            {timeSlots.map((timeSlot) => (
+                                <div key={timeSlot} className="contents">
+                                    {/* Time label */}
+                                    <div className="bg-gray-50 dark:bg-gray-800 p-2 text-xs text-gray-500 text-center border-r">
+                                        {timeSlot}
+                                    </div>
+
+                                    {/* Day columns */}
+                                    {weekDays.map((day, dayIndex) => {
+                                        const dateKey = day.toDateString();
+                                        const dayTasks = (allWeekTasks[dateKey] || []).filter(task => {
+                                            const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                                task.description.toLowerCase().includes(searchTerm.toLowerCase());
+                                            const matchesStatus = filterStatus === 'all' ||
+                                                (filterStatus === 'completed' ? task.completed : !task.completed);
+                                            const matchesPriority = filterPriority === 'all' || task.priority === filterPriority;
+                                            const matchesCategory = filterCategory === 'all' || task.category === filterCategory;
+
+                                            return matchesSearch && matchesStatus && matchesPriority && matchesCategory;
+                                        });
+                                        const hour = parseInt(timeSlot.split(':')[0]);
+
+                                        // Find tasks that overlap with this time slot
+                                        const tasksInSlot = dayTasks.filter(task => {
+                                            if (!task.startTime || !task.endTime) return false;
+                                            const taskStartHour = parseInt(task.startTime.split(':')[0]);
+                                            const taskEndHour = parseInt(task.endTime.split(':')[0]);
+                                            return hour >= taskStartHour && hour < taskEndHour;
+                                        });
+
+                                        return (
+                                            <div key={`${dateKey}-${timeSlot}`} className="bg-white dark:bg-gray-900 p-1 min-h-[40px] relative">
+                                                {tasksInSlot.map((task) => (
+                                                    <div
+                                                        key={task.id}
+                                                        onClick={() => handleTaskClick(task)}
+                                                        className={`text-xs p-1 rounded cursor-pointer mb-1 border-l-2 ${getCategoryColor(task.category)} hover:opacity-80 transition-opacity shadow-sm`}
+                                                        title={`${task.title} (${task.startTime} - ${task.endTime})`}
+                                                    >
+                                                        <div className="font-medium truncate text-white text-[10px] leading-tight">{task.title}</div>
+                                                        <div className="text-[9px] opacity-90 text-white">{task.startTime}-{task.endTime}</div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Legend */}
+                    <div className="mt-4 flex items-center space-x-6 text-sm">
+                        <div className="flex items-center space-x-2">
+                            <div className="w-3 h-3 bg-green-500 rounded"></div>
+                            <span>Học tập</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <div className="w-3 h-3 bg-yellow-500 rounded"></div>
+                            <span>Phát triển bản thân</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <div className="w-3 h-3 bg-purple-500 rounded"></div>
+                            <span>Giải trí</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <div className="w-3 h-3 bg-red-500 rounded"></div>
+                            <span>Gia đình</span>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
 
             {/* Search and Filters */}
             <Card>

@@ -317,12 +317,18 @@ export function TaskProvider({ children }: TaskProviderProps) {
         for (let i = 0; i < 7; i++) {
             const date = new Date(startDate);
             date.setDate(startDate.getDate() + i);
-            const dateString = date.toDateString();
+            const dateString = date.toDateString(); // Format: "Mon Jan 01 2024"
 
             weekTasks[dateString] = userTasks.filter(task => {
                 if (!task.deadline) return false;
-                const taskDate = new Date(task.deadline).toDateString();
-                return taskDate === dateString;
+
+                // Tạo date object từ deadline và set timezone về local
+                const taskDeadline = new Date(task.deadline);
+                const taskDate = new Date(taskDeadline.getFullYear(), taskDeadline.getMonth(), taskDeadline.getDate());
+                const taskDateString = taskDate.toDateString();
+
+
+                return taskDateString === dateString;
             });
         }
 

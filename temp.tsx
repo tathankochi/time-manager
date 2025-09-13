@@ -383,7 +383,7 @@ export function CalendarModule() {
 
                                     {/* Day columns */}
                                     {weekDays.map((day, dayIndex) => {
-                                        const dateKey = day.toISOString().split('T')[0];
+                                        const dateKey = day.toDateString();
                                         const dayTasks = (allWeekTasks[dateKey] || []).filter(task => {
                                             const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                                                 task.description.toLowerCase().includes(searchTerm.toLowerCase());
