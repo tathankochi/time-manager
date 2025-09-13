@@ -2,12 +2,15 @@
 
 ## What Works
 - Project scaffolding and UI base styles.
+- UserContext with authentication and session management.
+- TaskContext with complete task management functionality.
 
 ## In Progress
-- Memory Bank initialization.
+- TaskContext integration into dashboard.
 
 ## Next
-- Implement timer and basic task CRUD.
+- Create task management UI components.
+- Integrate timer functionality with tasks.
 
 ## Known Issues
 - None tracked yet.

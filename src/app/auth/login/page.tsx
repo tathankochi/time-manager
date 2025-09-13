@@ -7,17 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-//import { useAuthStore } from "@/lib/stores/authStore";
+import { useUser } from "@/lib/contexts/UserContext";
 
 export default function LoginPage() {
-  //const { login, isLoading } = useAuthStore();
-  const login=()=>{
-    console.log("login");
-  }
-  const isLoading=false;
-  const router = useRouter();
+  const { login, isLoading } = useUser();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
@@ -28,41 +22,14 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const usersKey = "tm_users";
-      const sessionKey = "tm_session";
-      const raw = typeof window !== "undefined" ? localStorage.getItem(usersKey) : null;
-      const users: Array<any> = raw ? JSON.parse(raw) : [];
-
-      const email = formData.email.trim().toLowerCase();
-      const user = users.find((u) => u.email === email && u.password === formData.password);
-
-      if (!user) {
-        toast.error('Email hoặc mật khẩu không đúng.', {
-          duration: 2000,
-          description: 'Vui lòng kiểm tra và thử lại.',
-        });
-        return;
-      }
-
-      const session = {
-        email: user.email,
-        fullName: user.fullName,
-        createdAt: new Date().toISOString(),
-      };
-
-      if (formData.rememberMe) {
-        localStorage.setItem(sessionKey, JSON.stringify(session));
-      } else {
-        sessionStorage.setItem(sessionKey, JSON.stringify(session));
-      }
-
-      alert("Đăng nhập thành công!");
-      router.push("/");
-    } catch (err) {
-      console.error(err);
-      alert("Có lỗi xảy ra. Vui lòng thử lại.");
+      await login(formData.email, formData.password, formData.rememberMe);
+      toast.success('Đăng nhập thành công');
+    } catch (error) {
+      toast.error('Email hoặc mật khẩu không đúng.', {
+        duration: 2000,
+        description: 'Vui lòng kiểm tra và thử lại.',
+      });
     }
-    //await login(formData.email, formData.password);
   };
 
   return (
