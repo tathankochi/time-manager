@@ -26,17 +26,34 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
-interface NavigationProps {
-  activeModule: string;
-  setActiveModule: (module: string) => void;
-}
-
-export function Navigation({ activeModule, setActiveModule }: NavigationProps) {
+export function Navigation() {
+  const [activeModule, setActiveModule] = useState("");
   const { user, logout } = useUser();
   const router = useRouter();
+  const pathname = usePathname();
   const unreadCount = 0; // TODO: Implement notification system later
+
+  // Tự động set activeModule dựa trên URL
+  useEffect(() => {
+    const pathSegments = pathname.split('/');
+    const currentModule = pathSegments[pathSegments.length - 1];
+
+    // Map URL segments to module names
+    const moduleMap: { [key: string]: string } = {
+      'dashboard': 'dashboard',
+      'calendar': 'calendar',
+      'pomodoro': 'pomodoro',
+      'analytics': 'analytics',
+      'notifications': 'notifications'
+    };
+
+    if (moduleMap[currentModule]) {
+      setActiveModule(moduleMap[currentModule]);
+    }
+  }, [pathname, setActiveModule]);
 
   const navigationItems = [
     { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard },

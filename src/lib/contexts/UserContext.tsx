@@ -48,7 +48,7 @@ export function UserProvider({ children }: UserProviderProps) {
       // Thử lấy từ localStorage trước (remember me)
       if (typeof window !== 'undefined') {
         sessionData = localStorage.getItem(sessionKey);
-        
+
         // Nếu không có trong localStorage, thử sessionStorage
         if (!sessionData) {
           sessionData = sessionStorage.getItem(sessionKey);
@@ -75,7 +75,7 @@ export function UserProvider({ children }: UserProviderProps) {
   const login = async (email: string, password: string, rememberMe: boolean = false) => {
     try {
       setIsLoading(true);
-      
+
       // Lấy danh sách users từ localStorage
       const usersKey = "tm_users";
       const raw = typeof window !== "undefined" ? localStorage.getItem(usersKey) : null;
@@ -115,7 +115,7 @@ export function UserProvider({ children }: UserProviderProps) {
       });
 
       // Chuyển hướng đến trang user
-      router.push("/user");
+      router.push("/user/dashboard");
 
     } catch (error) {
       console.error('Lỗi đăng nhập:', error);
@@ -143,18 +143,18 @@ export function UserProvider({ children }: UserProviderProps) {
   // Hàm cập nhật thông tin user
   const updateUser = (updates: Partial<User>) => {
     setUser(prev => prev ? { ...prev, ...updates } : null);
-    
+
     // Cập nhật session storage
     if (user) {
       const sessionKey = "tm_session";
       const updatedUser = { ...user, ...updates };
-      
+
       if (typeof window !== 'undefined') {
         let sessionData = localStorage.getItem(sessionKey) || sessionStorage.getItem(sessionKey);
         if (sessionData) {
           const session = JSON.parse(sessionData);
           const updatedSession = { ...session, ...updates };
-          
+
           if (localStorage.getItem(sessionKey)) {
             localStorage.setItem(sessionKey, JSON.stringify(updatedSession));
           } else {
@@ -184,10 +184,10 @@ export function UserProvider({ children }: UserProviderProps) {
 // Custom hook để sử dụng UserContext
 export function useUser() {
   const context = useContext(UserContext);
-  
+
   if (context === undefined) {
     throw new Error('useUser must be used within a UserProvider');
   }
-  
+
   return context;
 }

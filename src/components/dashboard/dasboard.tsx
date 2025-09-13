@@ -9,7 +9,7 @@ import { useTask } from "@/lib/contexts/TaskContext";
 import { Progress } from "../ui/progress";
 import { TodayTask } from "./today.task";
 import { ImportantTask } from "./important.task";
-import { EfficiencyChart, ProductivityChart } from "./efficiency.chart";
+import { EfficiencyChart } from "./efficiency.chart";
 
 export function Dashboard() {
   const { user } = useUser();

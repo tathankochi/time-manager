@@ -20,9 +20,20 @@ export interface Task {
     updatedAt: Date;
 }
 
+// Định nghĩa kiểu dữ liệu Pomodoro Session
+export interface PomodoroSession {
+    id: string;
+    userId: string;
+    type: 'focus' | 'shortBreak' | 'longBreak';
+    duration: number; // in minutes
+    completedAt: Date;
+    taskId?: string; // Optional: link to specific task
+}
+
 // Định nghĩa kiểu cho Context
 export interface TaskState {
     tasks: Task[];
+    pomodoroSessions: PomodoroSession[];
     currentUserId: string | null;
     addTask: (task: Omit<Task, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => void;
     updateTask: (id: string, updates: Partial<Task>) => void;
@@ -36,6 +47,9 @@ export interface TaskState {
     checkTimeConflict: (date: string, startTime: string, endTime: string, excludeTaskId?: string) => Task | null;
     getTasksForWeek: (startDate: Date) => { [key: string]: Task[] };
     calculateProductivityScore: () => number;
+    addPomodoroSession: (type: 'focus' | 'shortBreak' | 'longBreak', duration: number, taskId?: string) => void;
+    getTodayPomodoroSessions: () => PomodoroSession[];
+    getPomodoroStats: () => { totalSessions: number; focusSessions: number; breakSessions: number };
     setCurrentUserId: (userId: string | null) => void;
 }
 
@@ -50,13 +64,15 @@ interface TaskProviderProps {
 // Provider Component
 export function TaskProvider({ children }: TaskProviderProps) {
     const [tasks, setTasks] = useState<Task[]>([]);
+    const [pomodoroSessions, setPomodoroSessions] = useState<PomodoroSession[]>([]);
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const { user } = useUser();
 
-    // Tải tasks từ localStorage khi component mount
+    // Tải tasks và pomodoro sessions từ localStorage khi component mount
     useEffect(() => {
         loadTasksFromStorage();
+        loadPomodoroSessionsFromStorage();
     }, []);
 
     // Đồng bộ currentUserId với user hiện tại
@@ -68,12 +84,13 @@ export function TaskProvider({ children }: TaskProviderProps) {
         }
     }, [user]);
 
-    // Lưu tasks vào localStorage mỗi khi tasks thay đổi
+    // Lưu tasks và pomodoro sessions vào localStorage mỗi khi thay đổi
     useEffect(() => {
         if (!isLoading) {
             saveTasksToStorage();
+            savePomodoroSessionsToStorage();
         }
-    }, [tasks, isLoading]);
+    }, [tasks, pomodoroSessions, isLoading]);
 
     // Hàm tải tasks từ localStorage
     const loadTasksFromStorage = () => {
@@ -312,6 +329,89 @@ export function TaskProvider({ children }: TaskProviderProps) {
         return weekTasks;
     };
 
+    // Hàm tải pomodoro sessions từ localStorage
+    const loadPomodoroSessionsFromStorage = () => {
+        try {
+            if (typeof window !== 'undefined') {
+                const sessionsKey = "tm_pomodoro_sessions";
+                const storedSessions = localStorage.getItem(sessionsKey);
+
+                if (storedSessions) {
+                    const parsedSessions = JSON.parse(storedSessions).map((session: any) => ({
+                        ...session,
+                        completedAt: new Date(session.completedAt)
+                    }));
+                    setPomodoroSessions(parsedSessions);
+                }
+            }
+        } catch (error) {
+            console.error('Lỗi khi tải pomodoro sessions:', error);
+        }
+    };
+
+    // Hàm lưu pomodoro sessions vào localStorage
+    const savePomodoroSessionsToStorage = () => {
+        try {
+            if (typeof window !== 'undefined') {
+                const sessionsKey = "tm_pomodoro_sessions";
+                localStorage.setItem(sessionsKey, JSON.stringify(pomodoroSessions));
+            }
+        } catch (error) {
+            console.error('Lỗi khi lưu pomodoro sessions:', error);
+        }
+    };
+
+    // Lấy pomodoro sessions của user hiện tại
+    const getUserPomodoroSessions = (): PomodoroSession[] => {
+        if (!currentUserId) return [];
+        return pomodoroSessions.filter(session => session.userId === currentUserId);
+    };
+
+    // Thêm pomodoro session mới
+    const addPomodoroSession = (type: 'focus' | 'shortBreak' | 'longBreak', duration: number, taskId?: string) => {
+        if (!currentUserId) {
+            console.error('Không thể thêm pomodoro session: chưa đăng nhập');
+            return;
+        }
+
+        const newSession: PomodoroSession = {
+            id: generateId(),
+            userId: currentUserId,
+            type,
+            duration,
+            completedAt: new Date(),
+            taskId
+        };
+
+        setPomodoroSessions(prev => [...prev, newSession]);
+    };
+
+    // Lấy pomodoro sessions của hôm nay
+    const getTodayPomodoroSessions = (): PomodoroSession[] => {
+        if (!currentUserId) return [];
+        const today = new Date().toDateString();
+        return getUserPomodoroSessions().filter(session => {
+            const sessionDate = session.completedAt.toDateString();
+            return sessionDate === today;
+        });
+    };
+
+    // Lấy thống kê pomodoro
+    const getPomodoroStats = () => {
+        const userSessions = getUserPomodoroSessions();
+        const totalSessions = userSessions.length;
+        const focusSessions = userSessions.filter(session => session.type === 'focus').length;
+        const breakSessions = userSessions.filter(session =>
+            session.type === 'shortBreak' || session.type === 'longBreak'
+        ).length;
+
+        return {
+            totalSessions,
+            focusSessions,
+            breakSessions
+        };
+    };
+
     // Tính điểm năng suất dựa trên các yếu tố
     const calculateProductivityScore = (): number => {
         if (!currentUserId) return 0;
@@ -367,6 +467,7 @@ export function TaskProvider({ children }: TaskProviderProps) {
     // Giá trị context
     const value: TaskState = {
         tasks: getUserTasks(),
+        pomodoroSessions: getUserPomodoroSessions(),
         currentUserId,
         addTask,
         updateTask,
@@ -380,6 +481,9 @@ export function TaskProvider({ children }: TaskProviderProps) {
         checkTimeConflict,
         getTasksForWeek,
         calculateProductivityScore,
+        addPomodoroSession,
+        getTodayPomodoroSessions,
+        getPomodoroStats,
         setCurrentUserId
     };
 

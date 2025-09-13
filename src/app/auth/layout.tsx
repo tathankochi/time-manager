@@ -1,16 +1,8 @@
-// src/components/auth/AuthModule.tsx
-"use client";
-
-import { useState } from "react";
 import { GraduationCap } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserProvider } from "@/lib/contexts/UserContext";
-// import { LoginForm } from "./LoginForm";
-// import { RegisterForm } from "./RegisterForm";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
-  const [isLogin, setIsLogin] = useState(true);
-
   return (
     <UserProvider>
       <div className="min-h-screen flex items-center justify-center p-4">
@@ -30,17 +22,6 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           </div>
 
           <Card className="w-full shadow-xl border-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm">
-            <CardHeader className="text-center pb-6">
-              <CardTitle className="text-2xl text-gray-900 dark:text-white">
-                {isLogin ? "Chào mừng trở lại!" : "Tạo tài khoản mới"}
-              </CardTitle>
-              <CardDescription className="text-gray-600 dark:text-gray-400">
-                {isLogin
-                  ? "Đăng nhập để tiếp tục quản lý thời gian học tập"
-                  : "Tham gia cộng đồng sinh viên thông minh"}
-              </CardDescription>
-            </CardHeader>
-
             <CardContent>
               {children}
             </CardContent>
