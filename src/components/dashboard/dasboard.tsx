@@ -5,7 +5,7 @@ import { AlertCircle, Award, Brain, CheckCircle2, Clock, TrendingUp } from "luci
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Badge } from "../ui/badge";
-import { useTask } from "@/lib/contexts/TaskContext";
+import { useAnalyticsData } from "@/hooks/useAnalyticsData";
 import { Progress } from "../ui/progress";
 import { TodayTask } from "./today.task";
 import { ImportantTask } from "./important.task";
@@ -13,16 +13,8 @@ import { EfficiencyChart } from "./efficiency.chart";
 
 export function Dashboard() {
   const { user } = useUser();
-  const { tasks, getTodayTasks, calculateProductivityScore } = useTask();
+  const { tasks, todayTasks, productivityScore, completedTasks } = useAnalyticsData();
   const [currentTime, setCurrentTime] = useState(new Date());
-  const todayTasks = getTodayTasks();
-  const productivityScore = calculateProductivityScore();
-  // Lấy số nhiệm vụ đã hoàn thành trong 7 ngày qua
-  const oneWeekAgo = new Date(new Date().getTime() - 7 * 24 * 60 * 60 * 1000);
-  const completedTasks = tasks.filter(task =>
-    task.completed &&
-    task.updatedAt >= oneWeekAgo
-  ).length;
 
   // Tính tổng thời gian được phân bổ trong hôm nay
   const todayAllocatedTime = todayTasks

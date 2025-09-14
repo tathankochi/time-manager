@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useTask } from "@/lib/contexts/TaskContext";
 import { AlertCircle, CalendarIcon, CheckCircle2, ChevronLeft, ChevronRight, Circle, Clock, Edit, Filter, Plus, Search, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function CalendarPage() {
     const [currentWeekStart, setCurrentWeekStart] = useState(() => {
@@ -29,6 +29,17 @@ export default function CalendarPage() {
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [filterPriority, setFilterPriority] = useState<string>('all');
     const [filterCategory, setFilterCategory] = useState<string>('all');
+
+    // Đồng bộ selectedTask với tasks từ context
+    useEffect(() => {
+        if (selectedTask) {
+            const updatedTask = tasks.find(task => task.id === selectedTask.id);
+            if (updatedTask) {
+                setSelectedTask(updatedTask);
+            }
+        }
+    }, [tasks, selectedTask]);
+
     // Get tasks for current week
     const allWeekTasks = getTasksForWeek(currentWeekStart);
     // Task statistics
