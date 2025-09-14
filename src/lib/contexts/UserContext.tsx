@@ -9,6 +9,9 @@ interface User {
   fullName: string;
   university?: string;
   avatar?: string;
+  dateOfBirth?: string;
+  major?: string;
+  createdAt?: string;
 }
 
 // Định nghĩa kiểu cho Context
@@ -60,7 +63,10 @@ export function UserProvider({ children }: UserProviderProps) {
             email: session.email,
             fullName: session.fullName,
             university: session.university || 'Đại học',
-            avatar: session.avatar
+            avatar: session.avatar,
+            dateOfBirth: session.dateOfBirth,
+            major: session.major,
+            createdAt: session.createdAt
           });
         }
       }
@@ -95,7 +101,9 @@ export function UserProvider({ children }: UserProviderProps) {
         fullName: foundUser.fullName,
         university: foundUser.university || 'Đại học',
         avatar: foundUser.avatar,
-        createdAt: new Date().toISOString(),
+        dateOfBirth: foundUser.dateOfBirth,
+        major: foundUser.major,
+        createdAt: foundUser.createdAt || new Date().toISOString(),
       };
 
       // Lưu session
@@ -111,7 +119,10 @@ export function UserProvider({ children }: UserProviderProps) {
         email: session.email,
         fullName: session.fullName,
         university: session.university,
-        avatar: session.avatar
+        avatar: session.avatar,
+        dateOfBirth: session.dateOfBirth,
+        major: session.major,
+        createdAt: session.createdAt
       });
 
       // Chuyển hướng đến trang user

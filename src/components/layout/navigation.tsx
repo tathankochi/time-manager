@@ -34,7 +34,6 @@ export function Navigation() {
   const { user, logout } = useUser();
   const router = useRouter();
   const pathname = usePathname();
-  const unreadCount = 0; // TODO: Implement notification system later
 
   // Tự động set activeModule dựa trên URL
   useEffect(() => {
@@ -47,7 +46,6 @@ export function Navigation() {
       'calendar': 'calendar',
       'pomodoro': 'pomodoro',
       'analytics': 'analytics',
-      'notifications': 'notifications'
     };
 
     if (moduleMap[currentModule]) {
@@ -138,13 +136,12 @@ export function Navigation() {
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel>Tài khoản của tôi</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => {
+                  setActiveModule('');
+                  router.push('/user/profile');
+                }}>
                   <User className="mr-2 h-4 w-4" />
-                  <span onClick={() => setActiveModule('profile')}>Hồ sơ cá nhân</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Cài đặt</span>
+                  <span>Hồ sơ cá nhân</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={logout} className="text-red-600 dark:text-red-400">

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect } from 'react';
+import { useUser } from '@/hooks/useUser';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -12,61 +13,73 @@ import {
     User,
     Mail,
     School,
-    Calendar,
-    Save,
-    X,
     Camera,
-    CheckCircle2
+    CheckCircle2,
+    X,
+    Save
 } from 'lucide-react';
-import { useAuthStore } from '@/lib/stores/authStore';
+import { vietnameseUniversities } from '@/lib/data/vietnameseUniversities';
 
-export function ProfileModule() {
-    const { user, updateProfile } = useAuthStore();
+// Utility function to get initials from full name
+const getInitials = (fullName: string): string => {
+    return fullName
+        .split(' ')
+        .map(name => name.charAt(0))
+        .join('')
+        .toUpperCase()
+        .slice(0, 2);
+};
+
+export default function ProfilePage() {
+    const { user, updateUser } = useUser();
     const [isEditing, setIsEditing] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
     const [formData, setFormData] = useState({
-        fullName: user?.fullName || '',
-        email: user?.email || '',
-        dateOfBirth: user?.dateOfBirth || '',
-        university: user?.university || '',
-        major: user?.major || '',
+        fullName: '',
+        university: '',
+        dateOfBirth: '',
+        major: ''
     });
 
-    const vietnameseUniversities = [
-        'Đại học Quốc gia Hà Nội',
-        'Đại học Quốc gia TP.HCM',
-        'Đại học Bách khoa Hà Nội',
-        'Đại học Kinh tế Quốc dân',
-        'Đại học FPT',
-        'Đại học RMIT Việt Nam',
-        'Đại học Tôn Đức Thắng',
-        'Khác'
-    ];
+    // Initialize form data when user data changes
+    useEffect(() => {
+        if (user) {
+            setFormData({
+                fullName: user.fullName || '',
+                university: user.university || '',
+                dateOfBirth: user.dateOfBirth || '',
+                major: user.major || ''
+            });
+        }
+    }, [user]);
 
-    const academicYears = [
-        // Removed academic years
-    ];
-
+    // Handle save changes
     const handleSave = () => {
-        updateProfile(formData);
-        setIsEditing(false);
-        setShowSuccess(true);
-        setTimeout(() => setShowSuccess(false), 3000);
+        try {
+            updateUser(formData);
+            setIsEditing(false);
+            setShowSuccess(true);
+
+            // Hide success message after 3 seconds
+            setTimeout(() => {
+                setShowSuccess(false);
+            }, 3000);
+        } catch (error) {
+            console.error('Lỗi khi cập nhật thông tin:', error);
+        }
     };
 
+    // Handle cancel editing
     const handleCancel = () => {
-        setFormData({
-            fullName: user?.fullName || '',
-            email: user?.email || '',
-            dateOfBirth: user?.dateOfBirth || '',
-            university: user?.university || '',
-            major: user?.major || '',
-        });
+        if (user) {
+            setFormData({
+                fullName: user.fullName || '',
+                university: user.university || '',
+                dateOfBirth: user.dateOfBirth || '',
+                major: user.major || ''
+            });
+        }
         setIsEditing(false);
-    };
-
-    const getInitials = (name: string) => {
-        return name.split(' ').map(n => n[0]).join('').toUpperCase();
     };
 
     return (
@@ -192,25 +205,17 @@ export function ProfileModule() {
                                     <Label htmlFor="email" className="text-gray-700 dark:text-gray-300">
                                         Email sinh viên
                                     </Label>
-                                    {isEditing ? (
-                                        <div className="relative">
-                                            <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                                            <Input
-                                                id="email"
-                                                type="email"
-                                                placeholder="sinhvien@university.edu.vn"
-                                                className="pl-10"
-                                                value={formData.email}
-                                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                            />
-                                        </div>
-                                    ) : (
-                                        <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
-                                            <span className="text-gray-900 dark:text-white">
-                                                {user?.email || 'Chưa cập nhật'}
-                                            </span>
-                                        </div>
-                                    )}
+                                    <div className="relative">
+                                        <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                        <Input
+                                            id="email"
+                                            type="email"
+                                            placeholder="sinhvien@university.edu.vn"
+                                            className="pl-10 bg-gray-50 dark:bg-gray-800 cursor-not-allowed"
+                                            value={user?.email || ''}
+                                            disabled
+                                        />
+                                    </div>
                                 </div>
                             </div>
 
@@ -307,43 +312,6 @@ export function ProfileModule() {
                     </CardContent>
                 </Card>
             </div>
-
-            {/* Additional Settings */}
-            <Card>
-                <CardHeader>
-                    <CardTitle>Cài đặt tài khoản</CardTitle>
-                    <CardDescription>
-                        Quản lý các cài đặt bảo mật và tùy chọn tài khoản
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-4">
-                            <h4 className="font-medium text-gray-900 dark:text-white">Bảo mật</h4>
-                            <div className="space-y-2">
-                                <Button variant="outline" className="w-full justify-start">
-                                    Đổi mật khẩu
-                                </Button>
-                                <Button variant="outline" className="w-full justify-start">
-                                    Xác thực hai yếu tố
-                                </Button>
-                            </div>
-                        </div>
-
-                        <div className="space-y-4">
-                            <h4 className="font-medium text-gray-900 dark:text-white">Dữ liệu</h4>
-                            <div className="space-y-2">
-                                <Button variant="outline" className="w-full justify-start">
-                                    Xuất dữ liệu
-                                </Button>
-                                <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700">
-                                    Xóa tài khoản
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
         </div>
     );
 }

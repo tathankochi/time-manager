@@ -9,18 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { vietnameseUniversities } from "@/lib/data/vietnameseUniversities";
 //import { useAuthStore } from "@/lib/stores/authStore";
-
-const vietnameseUniversities = [
-  "Đại học Quốc gia Hà Nội",
-  "Đại học Quốc gia TP.HCM",
-  "Đại học Bách khoa Hà Nội",
-  "Đại học Kinh tế Quốc dân",
-  "Đại học FPT",
-  "Đại học RMIT Việt Nam",
-  "Đại học Tôn Đức Thắng",
-  "Khác",
-];
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
