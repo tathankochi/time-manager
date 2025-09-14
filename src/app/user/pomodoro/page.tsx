@@ -1,5 +1,5 @@
 "use client";
-import { PomodoroTimer } from "@/components/PomodoroTimer.tsx/pomodoro.timer";
+import { PomodoroTimer } from "@/components/PomodoroTimer/PomodoroTimer";
 
 export default function PomodoroPage() {
     return (
