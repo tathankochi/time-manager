@@ -39,8 +39,9 @@ export function TaskFilters({
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Tất cả</SelectItem>
+                            <SelectItem value="todo">Chưa làm</SelectItem>
                             <SelectItem value="completed">Hoàn thành</SelectItem>
-                            <SelectItem value="pending">Chưa hoàn thành</SelectItem>
+                            <SelectItem value="miss">Bỏ lỡ</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>

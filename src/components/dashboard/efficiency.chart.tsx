@@ -14,29 +14,44 @@ export function EfficiencyChart() {
         for (let i = 6; i >= 0; i--) {
             const date = new Date(today);
             date.setDate(today.getDate() - i);
+            date.setHours(0, 0, 0, 0); // Đặt về đầu ngày để so sánh chính xác
 
-            // Lấy tasks của ngày đó
+            // Lấy tasks của ngày đó (dựa trên deadline)
             const dayTasks = tasks.filter(task => {
                 if (!task.deadline) return false;
-                const taskDate = new Date(task.deadline).toDateString();
-                return taskDate === date.toDateString();
+                const taskDate = new Date(task.deadline);
+                taskDate.setHours(0, 0, 0, 0); // Đặt về đầu ngày để so sánh chính xác
+                return taskDate.getTime() === date.getTime();
             });
 
-            // Tính efficiency score cho ngày đó (tạm thời dùng logic đơn giản)
+            // Tính efficiency score cho ngày đó
             let efficiencyScore = 0;
             if (dayTasks.length > 0) {
-                // 1. Tính tỷ lệ hoàn thành tổng thể
-                const completedTasks = dayTasks.filter(task => task.completed).length;
-                const completionRate = (completedTasks / dayTasks.length) * 100;
+                // 1. Tính tỷ lệ hoàn thành tổng thể (dựa trên status)
+                const completedTasks = dayTasks.filter(task => task.status === 'completed').length;
+                const missedTasks = dayTasks.filter(task => task.status === 'miss').length;
+                const totalProcessedTasks = completedTasks + missedTasks;
+
+                let completionRate = 0;
+                if (totalProcessedTasks > 0) {
+                    completionRate = (completedTasks / totalProcessedTasks) * 100;
+                }
 
                 // 2. Tính tỷ lệ hoàn thành tasks quan trọng
                 const importantTasks = dayTasks.filter(task =>
                     task.priority === 'high' || task.priority === 'medium'
                 );
-                console.log("Impo", importantTasks);
-                const completedImportantTasks = importantTasks.filter(task => task.completed).length;
-                const importantCompletionRate = importantTasks.length > 0 ?
-                    (completedImportantTasks / importantTasks.length) * 100 : 100;
+                const completedImportantTasks = importantTasks.filter(task => task.status === 'completed').length;
+                const missedImportantTasks = importantTasks.filter(task => task.status === 'miss').length;
+                const totalProcessedImportantTasks = completedImportantTasks + missedImportantTasks;
+
+                let importantCompletionRate = 0;
+                if (totalProcessedImportantTasks > 0) {
+                    importantCompletionRate = (completedImportantTasks / totalProcessedImportantTasks) * 100;
+                } else if (importantTasks.length === 0) {
+                    // Nếu không có task quan trọng, coi như 100%
+                    importantCompletionRate = 100;
+                }
 
                 // 3. Công thức tổng hợp
                 efficiencyScore = Math.round((completionRate * 0.6) + (importantCompletionRate * 0.4));

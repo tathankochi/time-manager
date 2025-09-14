@@ -60,7 +60,6 @@ export function Navigation() {
     { id: 'calendar', label: 'Lịch biểu', icon: Calendar },
     { id: 'pomodoro', label: 'Timer Pomodoro', icon: Clock },
     { id: 'analytics', label: 'Phân tích', icon: BarChart3 },
-    { id: 'notifications', label: 'Thông báo', icon: Bell, badge: unreadCount },
   ];
   const handleOnClick = (id: string) => {
     setActiveModule(id);

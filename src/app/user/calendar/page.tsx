@@ -20,13 +20,13 @@ export default function CalendarPage() {
         //Trả về ngày thứ 2 gần nhất
         return monday;
     });
-    const { tasks, deleteTask, toggleTask, getTasksForWeek } = useTask();
+    const { tasks, deleteTask, toggleTask, getTasksForWeek, setTaskStatus } = useTask();
     const [showTaskForm, setShowTaskForm] = useState(false);
     const [selectedTask, setSelectedTask] = useState<any>(null);
     const [showFilters, setShowFilters] = useState(false);
     const [showTaskDetail, setShowTaskDetail] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const [filterStatus, setFilterStatus] = useState<string>('all');
+    const [filterStatus, setFilterStatus] = useState<string>('todo');
     const [filterPriority, setFilterPriority] = useState<string>('all');
     const [filterCategory, setFilterCategory] = useState<string>('all');
 
@@ -45,9 +45,9 @@ export default function CalendarPage() {
     // Task statistics
     const taskStats = {
         total: tasks.length,
-        completed: tasks.filter(t => t.completed).length,
-        pending: tasks.filter(t => !t.completed && t.deadline && new Date(t.deadline) > new Date()).length,
-        overdue: tasks.filter(t => t.deadline && new Date(t.deadline) < new Date() && !t.completed).length
+        completed: tasks.filter(t => t.status === 'completed').length,
+        pending: tasks.filter(t => t.status === 'todo').length,
+        overdue: tasks.filter(t => t.status === 'miss').length
     };
     const handleTaskClick = (task: any) => {
         setSelectedTask(task);
@@ -62,7 +62,9 @@ export default function CalendarPage() {
         const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
             task.description.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesStatus = filterStatus === 'all' ||
-            (filterStatus === 'completed' ? task.completed : !task.completed);
+            (filterStatus === 'completed' ? task.status === 'completed' :
+                filterStatus === 'todo' ? task.status === 'todo' :
+                    filterStatus === 'miss' ? task.status === 'miss' : true);
         const matchesPriority = filterPriority === 'all' || task.priority === filterPriority;
         const matchesCategory = filterCategory === 'all' || task.category === filterCategory;
 
@@ -273,39 +275,65 @@ export default function CalendarPage() {
                                     {/* Day columns */}
                                     {weekDays.map((day, dayIndex) => {
                                         const dateKey = day.toDateString();
-                                        const dayTasks = (allWeekTasks[dateKey] || []).filter(task => {
-                                            const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                                task.description.toLowerCase().includes(searchTerm.toLowerCase());
-                                            const matchesStatus = filterStatus === 'all' ||
-                                                (filterStatus === 'completed' ? task.completed : !task.completed);
-                                            const matchesPriority = filterPriority === 'all' || task.priority === filterPriority;
-                                            const matchesCategory = filterCategory === 'all' || task.category === filterCategory;
-
-                                            return matchesSearch && matchesStatus && matchesPriority && matchesCategory;
-                                        });
+                                        // Get all tasks for this day without any filtering
+                                        const dayTasks = allWeekTasks[dateKey] || [];
                                         const hour = parseInt(timeSlot.split(':')[0]);
 
-                                        // Find tasks that overlap with this time slot
+                                        // Find tasks that overlap with this time slot OR tasks without specific time
                                         const tasksInSlot = dayTasks.filter(task => {
-                                            if (!task.startTime || !task.endTime) return false;
-                                            const taskStartHour = parseInt(task.startTime.split(':')[0]);
-                                            const taskEndHour = parseInt(task.endTime.split(':')[0]);
-                                            return hour >= taskStartHour && hour < taskEndHour;
+                                            // If task has startTime and endTime, check if it overlaps with current time slot
+                                            if (task.startTime && task.endTime) {
+                                                const taskStartHour = parseInt(task.startTime.split(':')[0]);
+                                                const taskEndHour = parseInt(task.endTime.split(':')[0]);
+                                                return hour >= taskStartHour && hour < taskEndHour;
+                                            }
+                                            // If task doesn't have specific time, show it in the first time slot (00:00)
+                                            return hour === 0;
                                         });
 
                                         return (
                                             <div key={`${dateKey}-${timeSlot}`} className="bg-white dark:bg-gray-900 p-1 min-h-[40px] relative">
-                                                {tasksInSlot.map((task) => (
-                                                    <div
-                                                        key={task.id}
-                                                        onClick={() => handleTaskClick(task)}
-                                                        className={`text-xs p-1 rounded cursor-pointer mb-1 border-l-2 ${getCategoryColor(task.category)} hover:opacity-80 transition-opacity shadow-sm`}
-                                                        title={`${task.title} (${task.startTime} - ${task.endTime})`}
-                                                    >
-                                                        <div className="font-medium truncate text-white text-[10px] leading-tight">{task.title}</div>
-                                                        <div className="text-[9px] opacity-90 text-white">{task.startTime}-{task.endTime}</div>
-                                                    </div>
-                                                ))}
+                                                {tasksInSlot.map((task) => {
+                                                    // Get status color and icon
+                                                    const getStatusColor = (status: string) => {
+                                                        switch (status) {
+                                                            case 'completed': return 'bg-green-100 border-green-300 text-green-800';
+                                                            case 'miss': return 'bg-red-100 border-red-300 text-red-800';
+                                                            case 'todo': return 'bg-yellow-100 border-yellow-300 text-yellow-800';
+                                                            default: return 'bg-gray-100 border-gray-300 text-gray-800';
+                                                        }
+                                                    };
+
+                                                    const getStatusIcon = (status: string) => {
+                                                        switch (status) {
+                                                            case 'completed': return '✓';
+                                                            case 'miss': return '✗';
+                                                            case 'todo': return '○';
+                                                            default: return '○';
+                                                        }
+                                                    };
+
+                                                    return (
+                                                        <div
+                                                            key={task.id}
+                                                            onClick={() => handleTaskClick(task)}
+                                                            className={`text-xs p-1 rounded cursor-pointer mb-1 border-l-2 ${getCategoryColor(task.category)} hover:opacity-80 transition-opacity shadow-sm`}
+                                                            title={`${task.title}${task.startTime && task.endTime ? ` (${task.startTime} - ${task.endTime})` : ''} - ${task.status === 'completed' ? 'Hoàn thành' : task.status === 'miss' ? 'Bỏ lỡ' : 'Chưa làm'}`}
+                                                        >
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex-1">
+                                                                    <div className="font-medium truncate text-white text-[10px] leading-tight">{task.title}</div>
+                                                                    {task.startTime && task.endTime && (
+                                                                        <div className="text-[9px] opacity-90 text-white">{task.startTime}-{task.endTime}</div>
+                                                                    )}
+                                                                </div>
+                                                                <div className={`ml-1 px-1 rounded text-[8px] ${getStatusColor(task.status)}`}>
+                                                                    {getStatusIcon(task.status)}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
                                             </div>
                                         );
                                     })}
@@ -315,22 +343,49 @@ export default function CalendarPage() {
                     </div>
 
                     {/* Legend */}
-                    <div className="mt-4 flex items-center space-x-6 text-sm">
-                        <div className="flex items-center space-x-2">
-                            <div className="w-3 h-3 bg-green-500 rounded"></div>
-                            <span>Học tập</span>
+                    <div className="mt-4 space-y-3">
+                        {/* Category Legend */}
+                        <div className="flex items-center space-x-6 text-sm">
+                            <span className="font-medium text-gray-700 dark:text-gray-300">Phân loại:</span>
+                            <div className="flex items-center space-x-2">
+                                <div className="w-3 h-3 bg-green-500 rounded"></div>
+                                <span>Học tập</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <div className="w-3 h-3 bg-yellow-500 rounded"></div>
+                                <span>Phát triển bản thân</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <div className="w-3 h-3 bg-purple-500 rounded"></div>
+                                <span>Giải trí</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <div className="w-3 h-3 bg-red-500 rounded"></div>
+                                <span>Gia đình</span>
+                            </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                            <div className="w-3 h-3 bg-yellow-500 rounded"></div>
-                            <span>Phát triển bản thân</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <div className="w-3 h-3 bg-purple-500 rounded"></div>
-                            <span>Giải trí</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <div className="w-3 h-3 bg-red-500 rounded"></div>
-                            <span>Gia đình</span>
+
+                        {/* Status Legend */}
+                        <div className="flex items-center space-x-6 text-sm">
+                            <span className="font-medium text-gray-700 dark:text-gray-300">Trạng thái:</span>
+                            <div className="flex items-center space-x-2">
+                                <div className="w-3 h-3 bg-green-100 border border-green-300 rounded flex items-center justify-center">
+                                    <span className="text-green-800 text-xs">✓</span>
+                                </div>
+                                <span>Hoàn thành</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <div className="w-3 h-3 bg-red-100 border border-red-300 rounded flex items-center justify-center">
+                                    <span className="text-red-800 text-xs">✗</span>
+                                </div>
+                                <span>Bỏ lỡ</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <div className="w-3 h-3 bg-yellow-100 border border-yellow-300 rounded flex items-center justify-center">
+                                    <span className="text-yellow-800 text-xs">○</span>
+                                </div>
+                                <span>Chưa làm</span>
+                            </div>
                         </div>
                     </div>
                 </CardContent>
@@ -485,23 +540,46 @@ export default function CalendarPage() {
                             )}
 
                             <div className="flex items-center space-x-2 pt-4">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => toggleTask(selectedTask.id)}
-                                >
-                                    {selectedTask.completed ? (
-                                        <>
-                                            <Circle className="h-4 w-4 mr-1" />
-                                            Đánh dấu chưa hoàn thành
-                                        </>
-                                    ) : (
-                                        <>
+                                {/* Status change buttons - only show for todo tasks */}
+                                {selectedTask.status === 'todo' && (
+                                    <>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                                setTaskStatus(selectedTask.id, 'completed');
+                                                setShowTaskDetail(false);
+                                            }}
+                                            className="text-green-600 hover:text-green-700 border-green-300"
+                                        >
                                             <CheckCircle2 className="h-4 w-4 mr-1" />
-                                            Đánh dấu hoàn thành
-                                        </>
-                                    )}
-                                </Button>
+                                            Hoàn thành
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                                setTaskStatus(selectedTask.id, 'miss');
+                                                setShowTaskDetail(false);
+                                            }}
+                                            className="text-red-600 hover:text-red-700 border-red-300"
+                                        >
+                                            <AlertCircle className="h-4 w-4 mr-1" />
+                                            Bỏ lỡ
+                                        </Button>
+                                    </>
+                                )}
+
+                                {/* Show current status for completed/miss tasks */}
+                                {(selectedTask.status === 'completed' || selectedTask.status === 'miss') && (
+                                    <div className="flex items-center space-x-2 text-sm">
+                                        <span className="text-gray-500">Trạng thái:</span>
+                                        <Badge variant={selectedTask.status === 'completed' ? 'default' : 'destructive'}>
+                                            {selectedTask.status === 'completed' ? 'Đã hoàn thành' : 'Đã bỏ lỡ'}
+                                        </Badge>
+                                    </div>
+                                )}
+
                                 <Button
                                     variant="outline"
                                     size="sm"

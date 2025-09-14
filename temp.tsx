@@ -1,170 +1,81 @@
 "use client";
 
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import {
-    Calendar as CalendarIcon,
-    ChevronLeft,
-    ChevronRight,
-    Plus,
-    Clock,
+    Bell,
     CheckCircle2,
-    Circle,
-    Edit,
+    AlertCircle,
+    Info,
     Trash2,
-    Search,
-    Filter,
-    AlertCircle
+    Settings,
+    Clock,
+    Calendar,
+    BookOpen,
+    Target,
+    MessageSquare
 } from 'lucide-react';
-import { useTaskStore } from '@/lib/stores/taskStore';
-import { TaskForm } from '@/components/tasks/TaskForm';
-import { TaskFilters } from '@/components/tasks/TaskFilters';
+import { useNotificationStore } from '@/lib/stores/notificationStore';
 
-export function CalendarModule() {
-    const [currentWeekStart, setCurrentWeekStart] = useState(() => {
-        const today = new Date();
-        const dayOfWeek = today.getDay();
-        const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Make Monday the first day
-        const monday = new Date(today);
-        monday.setDate(today.getDate() + mondayOffset);
-        monday.setHours(0, 0, 0, 0);
-        return monday;
+export function NotificationCenter() {
+    const {
+        notifications,
+        unreadCount,
+        markAsRead,
+        markAllAsRead,
+        deleteNotification
+    } = useNotificationStore();
+
+    const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
+    const [notificationSettings, setNotificationSettings] = useState({
+        deadlineReminders: true,
+        taskUpdates: true,
+        goalAchievements: true,
+        studyReminders: true,
+        weeklyReports: true,
+        systemUpdates: false,
     });
 
-    const [selectedTask, setSelectedTask] = useState<any>(null);
-    const [showTaskForm, setShowTaskForm] = useState(false);
-    const [showTaskDetail, setShowTaskDetail] = useState(false);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [showFilters, setShowFilters] = useState(false);
-    const [filterStatus, setFilterStatus] = useState<string>('all');
-    const [filterPriority, setFilterPriority] = useState<string>('all');
-    const [filterCategory, setFilterCategory] = useState<string>('all');
-
-    const { tasks, toggleTask, deleteTask, getTasksForWeek } = useTaskStore();
-
-    // Get tasks for current week
-    const allWeekTasks = getTasksForWeek(currentWeekStart);
-
-    // Generate week days
-    const weekDays = [];
-    for (let i = 0; i < 7; i++) {
-        const date = new Date(currentWeekStart);
-        date.setDate(currentWeekStart.getDate() + i);
-        weekDays.push(date);
-    }
-
-    // Navigate weeks
-    const goToPreviousWeek = () => {
-        const newWeekStart = new Date(currentWeekStart);
-        newWeekStart.setDate(currentWeekStart.getDate() - 7);
-        setCurrentWeekStart(newWeekStart);
-    };
-
-    const goToNextWeek = () => {
-        const newWeekStart = new Date(currentWeekStart);
-        newWeekStart.setDate(currentWeekStart.getDate() + 7);
-        setCurrentWeekStart(newWeekStart);
-    };
-
-    const goToCurrentWeek = () => {
-        const today = new Date();
-        const dayOfWeek = today.getDay();
-        const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-        const monday = new Date(today);
-        monday.setDate(today.getDate() + mondayOffset);
-        monday.setHours(0, 0, 0, 0);
-        setCurrentWeekStart(monday);
-    };
-
-    // Filter tasks for search and filters
-    const filteredTasks = tasks.filter(task => {
-        const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            task.description.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesStatus = filterStatus === 'all' ||
-            (filterStatus === 'completed' ? task.completed : !task.completed);
-        const matchesPriority = filterPriority === 'all' || task.priority === filterPriority;
-        const matchesCategory = filterCategory === 'all' || task.category === filterCategory;
-
-        return matchesSearch && matchesStatus && matchesPriority && matchesCategory;
+    const filteredNotifications = notifications.filter(notification => {
+        if (filter === 'unread') return !notification.read;
+        if (filter === 'read') return notification.read;
+        return true;
     });
 
-    // Apply filters to week tasks
-    const weekTasks = {};
-    Object.keys(allWeekTasks).forEach(dateKey => {
-        weekTasks[dateKey] = allWeekTasks[dateKey].filter(task => {
-            const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                task.description.toLowerCase().includes(searchTerm.toLowerCase());
-            const matchesStatus = filterStatus === 'all' ||
-                (filterStatus === 'completed' ? task.completed : !task.completed);
-            const matchesPriority = filterPriority === 'all' || task.priority === filterPriority;
-            const matchesCategory = filterCategory === 'all' || task.category === filterCategory;
-
-            return matchesSearch && matchesStatus && matchesPriority && matchesCategory;
-        });
-    });
-
-    // Get category color
-    const getCategoryColor = (category: string) => {
-        switch (category) {
-            case 'Học tập': return 'bg-green-500 border-green-600 text-white';
-            case 'Phát triển bản thân': return 'bg-yellow-500 border-yellow-600 text-white';
-            case 'Giải trí': return 'bg-purple-500 border-purple-600';
-            case 'Gia đình': return 'bg-red-500 border-red-600';
-            default: return 'bg-gray-500 border-gray-600';
+    const getNotificationIcon = (type: string) => {
+        switch (type) {
+            case 'success': return <CheckCircle2 className="h-5 w-5 text-green-600" />;
+            case 'warning': return <AlertCircle className="h-5 w-5 text-amber-600" />;
+            case 'error': return <AlertCircle className="h-5 w-5 text-red-600" />;
+            default: return <Info className="h-5 w-5 text-blue-600" />;
         }
     };
 
     const getPriorityColor = (priority: string) => {
         switch (priority) {
-            case 'high': return 'destructive';
-            case 'medium': return 'default';
-            case 'low': return 'secondary';
-            default: return 'secondary';
+            case 'high': return 'border-l-red-500 bg-red-50 dark:bg-red-900/10';
+            case 'medium': return 'border-l-amber-500 bg-amber-50 dark:bg-amber-900/10';
+            case 'low': return 'border-l-blue-500 bg-blue-50 dark:bg-blue-900/10';
+            default: return 'border-l-gray-500 bg-gray-50 dark:bg-gray-900/10';
         }
     };
 
-    const getPriorityText = (priority: string) => {
-        switch (priority) {
-            case 'high': return 'Cao';
-            case 'medium': return 'Trung bình';
-            case 'low': return 'Thấp';
-            default: return 'Thấp';
-        }
-    };
+    const formatTimeAgo = (date: Date) => {
+        const now = new Date();
+        const diffMs = now.getTime() - date.getTime();
+        const diffMins = Math.floor(diffMs / (1000 * 60));
+        const diffHours = Math.floor(diffMins / 60);
+        const diffDays = Math.floor(diffHours / 24);
 
-    // Generate time slots (24 hours)
-    const timeSlots = [];
-    for (let hour = 0; hour < 24; hour++) {
-        timeSlots.push(`${hour.toString().padStart(2, '0')}:00`);
-    }
-
-    // Task statistics
-    const taskStats = {
-        total: tasks.length,
-        completed: tasks.filter(t => t.completed).length,
-        pending: tasks.filter(t => !t.completed).length,
-        overdue: tasks.filter(t => t.deadline && new Date(t.deadline) < new Date() && !t.completed).length
-    };
-
-    const handleTaskClick = (task: any) => {
-        setSelectedTask(task);
-        setShowTaskDetail(true);
-    };
-
-    const handleEditTask = (task: any) => {
-        setSelectedTask(task);
-        setShowTaskDetail(false);
-        setShowTaskForm(true);
-    };
-
-    const formatWeekRange = () => {
-        const endDate = new Date(currentWeekStart);
-        endDate.setDate(currentWeekStart.getDate() + 6);
-
-        return `${currentWeekStart.getDate()}/${currentWeekStart.getMonth() + 1} - ${endDate.getDate()}/${endDate.getMonth() + 1}/${endDate.getFullYear()}`;
+        if (diffMins < 1) return 'Vừa xong';
+        if (diffMins < 60) return `${diffMins} phút trước`;
+        if (diffHours < 24) return `${diffHours} giờ trước`;
+        if (diffDays < 7) return `${diffDays} ngày trước`;
+        return date.toLocaleDateString('vi-VN');
     };
 
     return (
@@ -172,410 +83,242 @@ export function CalendarModule() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Lịch biểu</h1>
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Trung tâm thông báo</h1>
                     <p className="text-gray-600 dark:text-gray-400 mt-1">
-                        Quản lý thời gian biểu và nhiệm vụ theo tuần
+                        Quản lý thông báo và cài đặt nhắc nhở
                     </p>
                 </div>
-                <Button
-                    onClick={() => setShowTaskForm(true)}
-                    className="bg-blue-600 hover:bg-blue-700"
-                >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Tạo nhiệm vụ mới
-                </Button>
-            </div>
-
-            {/* Task Statistics */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Card className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20">
-                    <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-blue-900 dark:text-blue-100">Tổng số</p>
-                                <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{taskStats.total}</p>
-                            </div>
-                            <CheckCircle2 className="h-8 w-8 text-blue-600 dark:text-blue-400" />
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20">
-                    <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-green-900 dark:text-green-100">Hoàn thành</p>
-                                <p className="text-2xl font-bold text-green-900 dark:text-green-100">{taskStats.completed}</p>
-                            </div>
-                            <Circle className="h-8 w-8 text-green-600 dark:text-green-400" />
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="bg-gradient-to-r from-amber-50 to-amber-100 dark:from-amber-900/20 dark:to-amber-800/20">
-                    <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-amber-900 dark:text-amber-100">Đang làm</p>
-                                <p className="text-2xl font-bold text-amber-900 dark:text-amber-100">{taskStats.pending}</p>
-                            </div>
-                            <Clock className="h-8 w-8 text-amber-600 dark:text-amber-400" />
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20">
-                    <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-medium text-red-900 dark:text-red-100">Quá hạn</p>
-                                <p className="text-2xl font-bold text-red-900 dark:text-red-100">{taskStats.overdue}</p>
-                            </div>
-                            <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
-
-            {/* Search and Filters */}
-            <Card>
-                <CardContent className="p-6">
-                    <div className="flex items-center space-x-4">
-                        <div className="flex-1 relative">
-                            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                            <Input
-                                placeholder="Tìm kiếm nhiệm vụ..."
-                                className="pl-10"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </div>
+                <div className="flex items-center space-x-3">
+                    {unreadCount > 0 && (
                         <Button
                             variant="outline"
-                            onClick={() => setShowFilters(!showFilters)}
-                            className={showFilters ? 'bg-gray-100 dark:bg-gray-800' : ''}
+                            onClick={markAllAsRead}
                         >
-                            <Filter className="h-4 w-4 mr-2" />
-                            Bộ lọc
+                            <CheckCircle2 className="h-4 w-4 mr-2" />
+                            Đánh dấu tất cả đã đọc
                         </Button>
-                    </div>
-
-                    {showFilters && (
-                        <div className="mt-4 pt-4 border-t">
-                            <TaskFilters
-                                filterStatus={filterStatus}
-                                setFilterStatus={setFilterStatus}
-                                filterPriority={filterPriority}
-                                setFilterPriority={setFilterPriority}
-                                filterCategory={filterCategory}
-                                setFilterCategory={setFilterCategory}
-                            />
-                        </div>
                     )}
-                </CardContent>
-            </Card>
+                    <Badge variant="secondary" className="px-3 py-1">
+                        {unreadCount} chưa đọc
+                    </Badge>
+                </div>
+            </div>
 
-            {/* Search Results */}
-            {searchTerm && (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Kết quả tìm kiếm cho "{searchTerm}"</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {filteredTasks.length > 0 ? (
-                            <div className="max-h-64 overflow-y-auto space-y-2">
-                                {filteredTasks.map((task) => (
-                                    <div
-                                        key={task.id}
-                                        onClick={() => handleTaskClick(task)}
-                                        className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                {/* Notification List */}
+                <div className="lg:col-span-3 space-y-6">
+                    {/* Filter Tabs */}
+                    <Card>
+                        <CardContent className="p-4">
+                            <div className="flex space-x-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                                {([
+                                    { key: 'all', label: 'Tất cả', count: notifications.length },
+                                    { key: 'unread', label: 'Chưa đọc', count: unreadCount },
+                                    { key: 'read', label: 'Đã đọc', count: notifications.length - unreadCount },
+                                ] as const).map(({ key, label, count }) => (
+                                    <button
+                                        key={key}
+                                        onClick={() => setFilter(key)}
+                                        className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all ${filter === key
+                                                ? 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm'
+                                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                                            }`}
                                     >
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex-1">
-                                                <h4 className="font-medium text-sm">{task.title}</h4>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400">{task.description}</p>
-                                                <div className="flex items-center space-x-2 mt-1">
-                                                    <Badge variant="outline" className="text-xs">
-                                                        {task.category}
-                                                    </Badge>
-                                                    {task.deadline && (
-                                                        <span className="text-xs text-gray-500">
-                                                            {new Date(task.deadline).toLocaleDateString('vi-VN')}
+                                        {label} ({count})
+                                    </button>
+                                ))}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Notifications */}
+                    <div className="space-y-4">
+                        {filteredNotifications.length > 0 ? (
+                            filteredNotifications.map((notification) => (
+                                <Card
+                                    key={notification.id}
+                                    className={`border-l-4 transition-all hover:shadow-md ${!notification.read ? 'ring-2 ring-blue-50 dark:ring-blue-900/20' : ''
+                                        } ${getPriorityColor(notification.priority)}`}
+                                >
+                                    <CardContent className="p-4">
+                                        <div className="flex items-start justify-between">
+                                            <div className="flex items-start space-x-3 flex-1">
+                                                {getNotificationIcon(notification.type)}
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center space-x-2 mb-1">
+                                                        <h3 className={`font-semibold text-sm ${!notification.read ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'
+                                                            }`}>
+                                                            {notification.title}
+                                                        </h3>
+                                                        {!notification.read && (
+                                                            <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                                                        )}
+                                                    </div>
+                                                    <p className={`text-sm ${!notification.read ? 'text-gray-700 dark:text-gray-300' : 'text-gray-600 dark:text-gray-400'
+                                                        }`}>
+                                                        {notification.message}
+                                                    </p>
+                                                    <div className="flex items-center space-x-4 mt-2">
+                                                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                                                            {formatTimeAgo(notification.createdAt)}
                                                         </span>
-                                                    )}
-                                                    {task.startTime && task.endTime && (
-                                                        <span className="text-xs text-gray-500">
-                                                            {task.startTime}-{task.endTime}
-                                                        </span>
-                                                    )}
+                                                        <Badge variant="outline" className="text-xs">
+                                                            {notification.priority === 'high' ? 'Ưu tiên cao' :
+                                                                notification.priority === 'medium' ? 'Ưu tiên trung' : 'Ưu tiên thấp'}
+                                                        </Badge>
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <Badge variant={getPriorityColor(task.priority)}>
-                                                {getPriorityText(task.priority)}
-                                            </Badge>
+                                            <div className="flex items-center space-x-2">
+                                                {!notification.read && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() => markAsRead(notification.id)}
+                                                        className="text-xs"
+                                                    >
+                                                        Đánh dấu đã đọc
+                                                    </Button>
+                                                )}
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => deleteNotification(notification.id)}
+                                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
                                         </div>
+                                    </CardContent>
+                                </Card>
+                            ))
+                        ) : (
+                            <Card>
+                                <CardContent className="p-12 text-center">
+                                    <Bell className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+                                    <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                                        {filter === 'unread' ? 'Không có thông báo chưa đọc' :
+                                            filter === 'read' ? 'Không có thông báo đã đọc' : 'Chưa có thông báo nào'}
+                                    </h3>
+                                    <p className="text-gray-600 dark:text-gray-400">
+                                        Các thông báo mới sẽ xuất hiện ở đây
+                                    </p>
+                                </CardContent>
+                            </Card>
+                        )}
+                    </div>
+                </div>
+
+                {/* Settings Sidebar */}
+                <div className="space-y-6">
+                    {/* Quick Stats */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-lg flex items-center space-x-2">
+                                <Bell className="h-5 w-5" />
+                                <span>Thống kê</span>
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm text-gray-600 dark:text-gray-400">Tổng số</span>
+                                    <span className="font-semibold">{notifications.length}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm text-gray-600 dark:text-gray-400">Chưa đọc</span>
+                                    <span className="font-semibold text-blue-600">{unreadCount}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm text-gray-600 dark:text-gray-400">Hôm nay</span>
+                                    <span className="font-semibold">
+                                        {notifications.filter(n =>
+                                            n.createdAt.toDateString() === new Date().toDateString()
+                                        ).length}
+                                    </span>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Notification Settings */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-lg flex items-center space-x-2">
+                                <Settings className="h-5 w-5" />
+                                <span>Cài đặt thông báo</span>
+                            </CardTitle>
+                            <CardDescription>
+                                Tùy chỉnh các loại thông báo bạn muốn nhận
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                                {[
+                                    {
+                                        key: 'deadlineReminders',
+                                        label: 'Nhắc nhở deadline',
+                                        description: 'Thông báo trước hạn nộp bài',
+                                        icon: Calendar,
+                                    },
+                                    {
+                                        key: 'taskUpdates',
+                                        label: 'Cập nhật nhiệm vụ',
+                                        description: 'Khi có thay đổi về nhiệm vụ',
+                                        icon: CheckCircle2,
+                                    },
+                                    {
+                                        key: 'goalAchievements',
+                                        label: 'Đạt mục tiêu',
+                                        description: 'Khi hoàn thành mục tiêu',
+                                        icon: Target,
+                                    },
+                                    {
+                                        key: 'studyReminders',
+                                        label: 'Nhắc nhở học tập',
+                                        description: 'Lời nhắc giờ học và nghỉ giải lao',
+                                        icon: BookOpen,
+                                    },
+                                    {
+                                        key: 'weeklyReports',
+                                        label: 'Báo cáo tuần',
+                                        description: 'Tổng kết hiệu suất hàng tuần',
+                                        icon: Clock,
+                                    },
+                                    {
+                                        key: 'systemUpdates',
+                                        label: 'Cập nhật hệ thống',
+                                        description: 'Thông báo về tính năng mới',
+                                        icon: MessageSquare,
+                                    },
+                                ].map(({ key, label, description, icon: Icon }) => (
+                                    <div key={key} className="flex items-center justify-between space-x-3">
+                                        <div className="flex items-start space-x-3 flex-1">
+                                            <Icon className="h-4 w-4 text-gray-500 mt-1" />
+                                            <div className="flex-1">
+                                                <Label htmlFor={key} className="text-sm font-medium cursor-pointer">
+                                                    {label}
+                                                </Label>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                    {description}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <Switch
+                                            id={key}
+                                            checked={notificationSettings[key as keyof typeof notificationSettings]}
+                                            onCheckedChange={(checked) =>
+                                                setNotificationSettings(prev => ({ ...prev, [key]: checked }))
+                                            }
+                                        />
                                     </div>
                                 ))}
                             </div>
-                        ) : (
-                            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                                <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                                <p>Không tìm thấy nhiệm vụ nào phù hợp với truy vấn.</p>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-            )}
-
-            {/* Week Navigation */}
-            <Card>
-                <CardHeader>
-                    <div className="flex items-center justify-between">
-                        <CardTitle className="text-xl flex items-center space-x-2">
-                            <CalendarIcon className="h-5 w-5" />
-                            <span>Tuần {formatWeekRange()}</span>
-                        </CardTitle>
-                        <div className="flex items-center space-x-2">
-                            <Button variant="outline" size="sm" onClick={goToPreviousWeek}>
-                                <ChevronLeft className="h-4 w-4" />
-                                Tuần trước
-                            </Button>
-                            <Button variant="outline" size="sm" onClick={goToCurrentWeek}>
-                                Tuần này
-                            </Button>
-                            <Button variant="outline" size="sm" onClick={goToNextWeek}>
-                                Tuần sau
-                                <ChevronRight className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    {/* Week Calendar Grid */}
-                    <div className="grid grid-cols-8 gap-1 mb-4">
-                        {/* Time column header */}
-                        <div className="text-center font-medium text-sm text-gray-500 p-2">
-                            Giờ
-                        </div>
-
-                        {/* Day headers */}
-                        {weekDays.map((day, index) => (
-                            <div key={index} className="text-center font-medium text-sm p-2 bg-gray-50 dark:bg-gray-800 rounded">
-                                <div className="text-gray-900 dark:text-white">
-                                    {day.toLocaleDateString('vi-VN', { weekday: 'short' })}
-                                </div>
-                                <div className="text-xs text-gray-500 dark:text-gray-400">
-                                    {day.getDate()}/{day.getMonth() + 1}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Calendar Grid */}
-                    <div className="max-h-96 overflow-y-auto border rounded-lg">
-                        <div className="grid grid-cols-8 gap-px bg-gray-200 dark:bg-gray-700">
-                            {timeSlots.map((timeSlot) => (
-                                <div key={timeSlot} className="contents">
-                                    {/* Time label */}
-                                    <div className="bg-gray-50 dark:bg-gray-800 p-2 text-xs text-gray-500 text-center border-r">
-                                        {timeSlot}
-                                    </div>
-
-                                    {/* Day columns */}
-                                    {weekDays.map((day, dayIndex) => {
-                                        const dateKey = day.toDateString();
-                                        const dayTasks = (allWeekTasks[dateKey] || []).filter(task => {
-                                            const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                                task.description.toLowerCase().includes(searchTerm.toLowerCase());
-                                            const matchesStatus = filterStatus === 'all' ||
-                                                (filterStatus === 'completed' ? task.completed : !task.completed);
-                                            const matchesPriority = filterPriority === 'all' || task.priority === filterPriority;
-                                            const matchesCategory = filterCategory === 'all' || task.category === filterCategory;
-
-                                            return matchesSearch && matchesStatus && matchesPriority && matchesCategory;
-                                        });
-                                        const hour = parseInt(timeSlot.split(':')[0]);
-
-                                        // Find tasks that overlap with this time slot
-                                        const tasksInSlot = dayTasks.filter(task => {
-                                            if (!task.startTime || !task.endTime) return false;
-                                            const taskStartHour = parseInt(task.startTime.split(':')[0]);
-                                            const taskEndHour = parseInt(task.endTime.split(':')[0]);
-                                            return hour >= taskStartHour && hour < taskEndHour;
-                                        });
-
-                                        return (
-                                            <div key={`${dateKey}-${timeSlot}`} className="bg-white dark:bg-gray-900 p-1 min-h-[40px] relative">
-                                                {tasksInSlot.map((task) => (
-                                                    <div
-                                                        key={task.id}
-                                                        onClick={() => handleTaskClick(task)}
-                                                        className={`text-xs p-1 rounded cursor-pointer mb-1 border-l-2 ${getCategoryColor(task.category)} hover:opacity-80 transition-opacity shadow-sm`}
-                                                        title={`${task.title} (${task.startTime} - ${task.endTime})`}
-                                                    >
-                                                        <div className="font-medium truncate text-white text-[10px] leading-tight">{task.title}</div>
-                                                        <div className="text-[9px] opacity-90 text-white">{task.startTime}-{task.endTime}</div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Legend */}
-                    <div className="mt-4 flex items-center space-x-6 text-sm">
-                        <div className="flex items-center space-x-2">
-                            <div className="w-3 h-3 bg-green-500 rounded"></div>
-                            <span>Học tập</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <div className="w-3 h-3 bg-yellow-500 rounded"></div>
-                            <span>Phát triển bản thân</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <div className="w-3 h-3 bg-purple-500 rounded"></div>
-                            <span>Giải trí</span>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                            <div className="w-3 h-3 bg-red-500 rounded"></div>
-                            <span>Gia đình</span>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-
-            {!searchTerm && tasks.length === 0 && (
-                <Card>
-                    <CardContent className="text-center py-12">
-                        <CalendarIcon className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-                        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                            Chưa có nhiệm vụ nào
-                        </h3>
-                        <p className="text-gray-500 dark:text-gray-400 mb-4">
-                            Bắt đầu bằng việc tạo nhiệm vụ đầu tiên
-                        </p>
-                        <Button onClick={() => setShowTaskForm(true)}>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Tạo nhiệm vụ mới
-                        </Button>
-                    </CardContent>
-                </Card>
-            )}
-
-            {showTaskForm && (
-                <TaskForm
-                    task={selectedTask}
-                    onClose={() => {
-                        setShowTaskForm(false);
-                        setSelectedTask(null);
-                    }}
-                />
-            )}
-
-            {/* Task Detail Modal */}
-            {showTaskDetail && selectedTask && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                                Chi tiết nhiệm vụ
-                            </h3>
-                            <button
-                                onClick={() => setShowTaskDetail(false)}
-                                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                            >
-                                ✕
-                            </button>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div>
-                                <h4 className="font-medium text-gray-900 dark:text-white mb-2">
-                                    {selectedTask.title}
-                                </h4>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                    {selectedTask.description}
-                                </p>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <span className="text-xs text-gray-500 dark:text-gray-400">Phân loại</span>
-                                    <p className="font-medium">{selectedTask.category}</p>
-                                </div>
-                                <div>
-                                    <span className="text-xs text-gray-500 dark:text-gray-400">Độ ưu tiên</span>
-                                    <Badge variant={getPriorityColor(selectedTask.priority)}>
-                                        {getPriorityText(selectedTask.priority)}
-                                    </Badge>
-                                </div>
-                            </div>
-
-                            {selectedTask.startTime && selectedTask.endTime && (
-                                <div>
-                                    <span className="text-xs text-gray-500 dark:text-gray-400">Thời gian</span>
-                                    <p className="font-medium flex items-center">
-                                        <Clock className="h-4 w-4 mr-1" />
-                                        {selectedTask.startTime} - {selectedTask.endTime}
-                                    </p>
-                                </div>
-                            )}
-
-                            {selectedTask.deadline && (
-                                <div>
-                                    <span className="text-xs text-gray-500 dark:text-gray-400">Ngày hạn</span>
-                                    <p className="font-medium">
-                                        {new Date(selectedTask.deadline).toLocaleDateString('vi-VN')}
-                                    </p>
-                                </div>
-                            )}
-
-                            <div className="flex items-center space-x-2 pt-4">
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => toggleTask(selectedTask.id)}
-                                >
-                                    {selectedTask.completed ? (
-                                        <>
-                                            <Circle className="h-4 w-4 mr-1" />
-                                            Đánh dấu chưa hoàn thành
-                                        </>
-                                    ) : (
-                                        <>
-                                            <CheckCircle2 className="h-4 w-4 mr-1" />
-                                            Đánh dấu hoàn thành
-                                        </>
-                                    )}
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleEditTask(selectedTask)}
-                                >
-                                    <Edit className="h-4 w-4 mr-1" />
-                                    Chỉnh sửa
-                                </Button>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => {
-                                        deleteTask(selectedTask.id);
-                                        setShowTaskDetail(false);
-                                    }}
-                                    className="text-red-600 hover:text-red-700"
-                                >
-                                    <Trash2 className="h-4 w-4 mr-1" />
-                                    Xóa
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
+                        </CardContent>
+                    </Card>
                 </div>
-            )}
+            </div>
         </div>
     );
 }

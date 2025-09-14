@@ -25,7 +25,7 @@ export function useAnalyticsData() {
     // Lấy số nhiệm vụ đã hoàn thành trong 7 ngày qua (theo logic dashboard)
     const oneWeekAgo = new Date(new Date().getTime() - 7 * 24 * 60 * 60 * 1000);
     const completedTasks = safeTasks.filter(task =>
-        task.completed &&
+        task.status === 'completed' &&
         task.updatedAt >= oneWeekAgo
     ).length;
 
@@ -66,47 +66,55 @@ export function useAnalyticsData() {
         { priority: 'low', label: 'Nhiệm vụ có độ ưu tiên thấp', count: safeTasks.filter(task => task.priority === 'low').length, icon: 'Info' }
     ];
 
-    // Tạo dữ liệu cho biểu đồ cột năng suất theo ngày
+    // Tạo dữ liệu cho biểu đồ cột năng suất theo ngày (7 ngày gần nhất)
     const weeklyData = (() => {
         const data = [];
         const today = new Date();
 
+        // Tạo 7 ngày gần nhất (từ 6 ngày trước đến hôm nay)
         for (let i = 6; i >= 0; i--) {
             const date = new Date(today);
             date.setDate(today.getDate() - i);
+            date.setHours(0, 0, 0, 0); // Đặt về đầu ngày để so sánh chính xác
 
-            // Lấy tasks của ngày đó
+            // Lấy tasks của ngày đó (dựa trên deadline)
             const dayTasks = safeTasks.filter(task => {
                 if (!task.deadline) return false;
-                const taskDate = new Date(task.deadline).toDateString();
-                return taskDate === date.toDateString();
+                const taskDate = new Date(task.deadline);
+                taskDate.setHours(0, 0, 0, 0); // Đặt về đầu ngày để so sánh chính xác
+                return taskDate.getTime() === date.getTime();
             });
 
             // Tính năng suất cho ngày đó
             let productivity = 0;
             if (dayTasks.length > 0) {
-                const completedTasks = dayTasks.filter(task => task.completed).length;
-                const completionRate = (completedTasks / dayTasks.length) * 100;
+                const completedTasks = dayTasks.filter(task => task.status === 'completed').length;
+                const missedTasks = dayTasks.filter(task => task.status === 'miss').length;
+                const totalProcessedTasks = completedTasks + missedTasks;
 
-                // Tính tỷ lệ hoàn thành tasks quan trọng
-                const importantTasks = dayTasks.filter(task =>
-                    task.priority === 'high' || task.priority === 'medium'
-                );
-                const completedImportantTasks = importantTasks.filter(task => task.completed).length;
-                const importantCompletionRate = importantTasks.length > 0 ?
-                    (completedImportantTasks / importantTasks.length) * 100 : 100;
-
-                // Công thức tổng hợp
-                productivity = Math.round((completionRate * 0.6) + (importantCompletionRate * 0.4));
+                // Nếu có tasks đã được xử lý (completed hoặc miss)
+                if (totalProcessedTasks > 0) {
+                    const completionRate = (completedTasks / totalProcessedTasks) * 100;
+                    productivity = Math.round(completionRate);
+                } else {
+                    // Nếu chưa có task nào được xử lý, năng suất = 0
+                    productivity = 0;
+                }
             }
 
             // Format ngày tháng: T2, T3, T4, T5, T6, T7, CN
             const dayNames = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
             const dayName = dayNames[date.getDay()];
 
+            // Thêm ngày tháng vào label để dễ nhận biết
+            const dayNumber = date.getDate();
+            const monthNumber = date.getMonth() + 1;
+            const displayLabel = `${dayName} ${dayNumber}/${monthNumber}`;
+
             data.push({
-                day: dayName,
-                productivity: productivity
+                day: displayLabel,
+                productivity: productivity,
+                fullDate: date.toISOString().split('T')[0] // Thêm full date để debug
             });
         }
 

@@ -28,13 +28,13 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
     description: task?.description || '',
     category: task?.category || '',
     priority: task?.priority || 'medium',
-    status: task?.status || 'todo',
     deadline: task?.deadline ? new Date(task.deadline) : undefined,
     startTime: task?.startTime || '',
     endTime: task?.endTime || '',
   });
 
   const [timeConflict, setTimeConflict] = useState<any>(null);
+  const [timeValidationError, setTimeValidationError] = useState<string | null>(null);
 
   const categories = [
     'Học tập',
@@ -58,9 +58,38 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
     }
   };
 
-  // Check conflicts when relevant fields change
+  // Check time validation
+  const checkTimeValidation = () => {
+    if (formData.startTime && formData.endTime) {
+      if (formData.startTime >= formData.endTime) {
+        setTimeValidationError("Giờ kết thúc phải sau giờ bắt đầu.");
+      } else {
+        setTimeValidationError(null);
+      }
+    } else {
+      setTimeValidationError(null);
+    }
+  };
+
+  // Check if form is complete
+  const isFormComplete = () => {
+    return (
+      formData.title.trim() !== '' &&
+      formData.description.trim() !== '' &&
+      formData.category !== '' &&
+      formData.priority !== '' &&
+      formData.deadline !== undefined &&
+      formData.startTime !== '' &&
+      formData.endTime !== '' &&
+      !timeConflict &&
+      !timeValidationError
+    );
+  };
+
+  // Check conflicts and validation when relevant fields change
   React.useEffect(() => {
     checkConflict();
+    checkTimeValidation();
   }, [formData.deadline, formData.startTime, formData.endTime]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -69,7 +98,6 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
     const taskData = {
       ...formData,
       deadline: formData.deadline?.toISOString(),
-      completed: formData.status === 'completed',
     };
 
     if (task) {
@@ -118,7 +146,7 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="category">Môn học</Label>
+              <Label htmlFor="category">Loại nhiệm vụ</Label>
               <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Chọn môn học" />
@@ -148,47 +176,31 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="status">Trạng thái</Label>
-              <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todo">Chưa làm</SelectItem>
-                  <SelectItem value="in-progress">Đang làm</SelectItem>
-                  <SelectItem value="completed">Hoàn thành</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Deadline</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start text-left font-normal"
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.deadline ? (
-                      format(formData.deadline, 'dd/MM/yyyy', { locale: vi })
-                    ) : (
-                      <span>Chọn ngày</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={formData.deadline}
-                    onSelect={(date) => setFormData({ ...formData, deadline: date })}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
+          <div className="space-y-2">
+            <Label>Deadline</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start text-left font-normal"
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {formData.deadline ? (
+                    format(formData.deadline, 'dd/MM/yyyy', { locale: vi })
+                  ) : (
+                    <span>Chọn ngày</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={formData.deadline}
+                  onSelect={(date) => setFormData({ ...formData, deadline: date })}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -232,11 +244,11 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
             </Alert>
           )}
 
-          {formData.startTime && formData.endTime && formData.startTime >= formData.endTime && (
+          {timeValidationError && (
             <Alert className="border-red-200 bg-red-50 dark:bg-red-900/20">
               <AlertTriangle className="h-4 w-4 text-red-600" />
               <AlertDescription className="text-red-800 dark:text-red-200">
-                Giờ kết thúc phải sau giờ bắt đầu.
+                {timeValidationError}
               </AlertDescription>
             </Alert>
           )}
@@ -245,7 +257,11 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
             <Button type="button" variant="outline" onClick={onClose}>
               Hủy
             </Button>
-            <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+            <Button
+              type="submit"
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              disabled={!isFormComplete()}
+            >
               {task ? 'Cập nhật' : 'Tạo nhiệm vụ'}
             </Button>
           </div>

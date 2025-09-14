@@ -141,7 +141,7 @@ export default function AnalyticsPage() {
                                 <span>Hiệu suất theo ngày</span>
                             </CardTitle>
                             <CardDescription>
-                                Theo dõi hiệu suất học tập trong tuần
+                                Theo dõi hiệu suất học tập trong 7 ngày gần nhất
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="flex-1 flex flex-col">

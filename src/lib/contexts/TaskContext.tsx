@@ -11,11 +11,10 @@ export interface Task {
     description: string;
     category: string;
     priority: 'low' | 'medium' | 'high';
-    status: 'todo' | 'in-progress' | 'completed';
+    status: 'todo' | 'miss' | 'completed';
     deadline?: string;
     startTime?: string; // HH:MM format
     endTime?: string;   // HH:MM format
-    completed: boolean;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -35,11 +34,11 @@ export interface TaskState {
     tasks: Task[];
     pomodoroSessions: PomodoroSession[];
     currentUserId: string | null;
-    addTask: (task: Omit<Task, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => void;
+    addTask: (task: Omit<Task, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'status'>) => void;
     updateTask: (id: string, updates: Partial<Task>) => void;
     deleteTask: (id: string) => void;
+    setTaskStatus: (id: string, status: 'todo' | 'miss' | 'completed') => void;
     toggleTask: (id: string) => void;
-    updateTaskStatus: (id: string) => void;
     getTodayTasks: () => Task[];
     getCompletedTasksCount: () => number;
     getTasksByCategory: (category: string) => Task[];
@@ -51,6 +50,7 @@ export interface TaskState {
     getTodayPomodoroSessions: () => PomodoroSession[];
     getPomodoroStats: () => { totalSessions: number; focusSessions: number; breakSessions: number };
     setCurrentUserId: (userId: string | null) => void;
+    getCompletionRateForDate: (date: Date) => number;
 }
 
 // Tạo Context
@@ -139,7 +139,7 @@ export function TaskProvider({ children }: TaskProviderProps) {
     };
 
     // Thêm task mới
-    const addTask = (taskData: Omit<Task, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
+    const addTask = (taskData: Omit<Task, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'status'>) => {
         if (!currentUserId) {
             console.error('Không thể thêm task: chưa đăng nhập');
             return;
@@ -150,10 +150,12 @@ export function TaskProvider({ children }: TaskProviderProps) {
             ...taskData,
             id: generateId(),
             userId: currentUserId,
+            status: 'todo',
             createdAt: now,
             updatedAt: now
         };
 
+        console.log('Creating new task:', newTask); // Debug log
         setTasks(prev => [...prev, newTask]);
     };
 
@@ -181,27 +183,8 @@ export function TaskProvider({ children }: TaskProviderProps) {
         setTasks(prev => prev.filter(task => !(task.id === id && task.userId === currentUserId)));
     };
 
-    // Toggle trạng thái completed
-    const toggleTask = (id: string) => {
-        if (!currentUserId) {
-            console.error('Không thể toggle task: chưa đăng nhập');
-            return;
-        }
-
-        setTasks(prev => prev.map(task =>
-            task.id === id && task.userId === currentUserId
-                ? {
-                    ...task,
-                    completed: !task.completed,
-                    status: !task.completed ? 'completed' : 'todo',
-                    updatedAt: new Date()
-                }
-                : task
-        ));
-    };
-
-    // Cập nhật status của task (todo -> in-progress -> completed)
-    const updateTaskStatus = (id: string) => {
+    // Set trạng thái task (todo, miss, completed)
+    const setTaskStatus = (id: string, status: 'todo' | 'miss' | 'completed') => {
         if (!currentUserId) {
             console.error('Không thể cập nhật status: chưa đăng nhập');
             return;
@@ -209,31 +192,9 @@ export function TaskProvider({ children }: TaskProviderProps) {
 
         setTasks(prev => prev.map(task => {
             if (task.id === id && task.userId === currentUserId) {
-                let newStatus: 'todo' | 'in-progress' | 'completed';
-                let newCompleted: boolean;
-
-                switch (task.status) {
-                    case 'todo':
-                        newStatus = 'in-progress';
-                        newCompleted = false;
-                        break;
-                    case 'in-progress':
-                        newStatus = 'completed';
-                        newCompleted = true;
-                        break;
-                    case 'completed':
-                        newStatus = 'todo';
-                        newCompleted = false;
-                        break;
-                    default:
-                        newStatus = 'todo';
-                        newCompleted = false;
-                }
-
                 return {
                     ...task,
-                    status: newStatus,
-                    completed: newCompleted,
+                    status: status,
                     updatedAt: new Date()
                 };
             }
@@ -241,21 +202,41 @@ export function TaskProvider({ children }: TaskProviderProps) {
         }));
     };
 
-    // Lấy tasks của ngày hôm nay
+    // Toggle trạng thái task giữa todo và completed
+    const toggleTask = (id: string) => {
+        if (!currentUserId) {
+            console.error('Không thể toggle task: chưa đăng nhập');
+            return;
+        }
+
+        setTasks(prev => prev.map(task => {
+            if (task.id === id && task.userId === currentUserId) {
+                const newStatus = task.status === 'completed' ? 'todo' : 'completed';
+                return {
+                    ...task,
+                    status: newStatus,
+                    updatedAt: new Date()
+                };
+            }
+            return task;
+        }));
+    };
+
+    // Lấy tasks của ngày hôm nay và chỉ lấy tasks có status 'todo'
     const getTodayTasks = (): Task[] => {
         if (!currentUserId) return [];
         const today = new Date().toDateString();
         return getUserTasks().filter(task => {
             if (!task.deadline) return false;
             const taskDate = new Date(task.deadline).toDateString();
-            return taskDate === today;
+            return taskDate === today && task.status === 'todo';
         });
     };
 
     // Đếm số tasks đã hoàn thành
     const getCompletedTasksCount = (): number => {
         if (!currentUserId) return 0;
-        return getUserTasks().filter(task => task.completed).length;
+        return getUserTasks().filter(task => task.status === 'completed').length;
     };
 
     // Lấy tasks theo category
@@ -264,11 +245,11 @@ export function TaskProvider({ children }: TaskProviderProps) {
         return getUserTasks().filter(task => task.category === category);
     };
 
-    // Lấy tasks quan trọng (priority high hoặc medium)
+    // Lấy tasks quan trọng (priority high) và chỉ lấy tasks có status 'todo'
     const getImportantTasks = (): Task[] => {
         if (!currentUserId) return [];
         return getUserTasks().filter(task =>
-            task.priority === 'high'
+            task.priority === 'high' && task.status === 'todo'
         );
     };
 
@@ -437,14 +418,14 @@ export function TaskProvider({ children }: TaskProviderProps) {
         if (recentTasks.length === 0) return 0;
 
         // 1. Tỷ lệ hoàn thành task (60%)
-        const completedTasks = recentTasks.filter(task => task.completed);
+        const completedTasks = recentTasks.filter(task => task.status === 'completed');
         const completionRate = (completedTasks.length / recentTasks.length) * 100;
 
         // 2. Tỷ lệ task quan trọng hoàn thành (25%)
         const importantTasks = recentTasks.filter(task =>
             task.priority === 'high' || task.priority === 'medium'
         );
-        const completedImportantTasks = importantTasks.filter(task => task.completed);
+        const completedImportantTasks = importantTasks.filter(task => task.status === 'completed');
         const importantCompletionRate = importantTasks.length > 0 ?
             (completedImportantTasks.length / importantTasks.length) * 100 : 100;
 
@@ -470,6 +451,32 @@ export function TaskProvider({ children }: TaskProviderProps) {
         return Math.min(100, Math.max(0, Math.round(productivityScore)));
     };
 
+    // Tính completion rate cho một ngày cụ thể (công thức đúng)
+    const getCompletionRateForDate = (date: Date): number => {
+        if (!currentUserId) return 0;
+
+        const targetDate = date.toDateString();
+        const dayTasks = getUserTasks().filter(task => {
+            if (!task.deadline) return false;
+            const taskDate = new Date(task.deadline).toDateString();
+            return taskDate === targetDate;
+        });
+
+        if (dayTasks.length === 0) return 0;
+
+        const completedTasks = dayTasks.filter(task => task.status === 'completed').length;
+        const missedTasks = dayTasks.filter(task => task.status === 'miss').length;
+        const totalProcessedTasks = completedTasks + missedTasks;
+
+        // Nếu có tasks đã được xử lý (completed hoặc miss)
+        if (totalProcessedTasks > 0) {
+            return Math.round((completedTasks / totalProcessedTasks) * 100);
+        } else {
+            // Nếu chưa có task nào được xử lý, completion rate = 0
+            return 0;
+        }
+    };
+
     // Giá trị context
     const value: TaskState = {
         tasks: getUserTasks(),
@@ -478,8 +485,8 @@ export function TaskProvider({ children }: TaskProviderProps) {
         addTask,
         updateTask,
         deleteTask,
+        setTaskStatus,
         toggleTask,
-        updateTaskStatus,
         getTodayTasks,
         getCompletedTasksCount,
         getTasksByCategory,
@@ -490,7 +497,8 @@ export function TaskProvider({ children }: TaskProviderProps) {
         addPomodoroSession,
         getTodayPomodoroSessions,
         getPomodoroStats,
-        setCurrentUserId
+        setCurrentUserId,
+        getCompletionRateForDate
     };
 
     return (
