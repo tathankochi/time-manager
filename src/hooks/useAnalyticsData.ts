@@ -9,7 +9,8 @@ export function useAnalyticsData() {
         getCompletedTasksCount,
         getTodayTasks,
         getPomodoroStats,
-        pomodoroSessions
+        pomodoroSessions,
+        getCompletionRateForDate
     } = useTask();
 
     // Đảm bảo tasks luôn là array
@@ -77,30 +78,8 @@ export function useAnalyticsData() {
             date.setDate(today.getDate() - i);
             date.setHours(0, 0, 0, 0); // Đặt về đầu ngày để so sánh chính xác
 
-            // Lấy tasks của ngày đó (dựa trên deadline)
-            const dayTasks = safeTasks.filter(task => {
-                if (!task.deadline) return false;
-                const taskDate = new Date(task.deadline);
-                taskDate.setHours(0, 0, 0, 0); // Đặt về đầu ngày để so sánh chính xác
-                return taskDate.getTime() === date.getTime();
-            });
-
-            // Tính năng suất cho ngày đó
-            let productivity = 0;
-            if (dayTasks.length > 0) {
-                const completedTasks = dayTasks.filter(task => task.status === 'completed').length;
-                const missedTasks = dayTasks.filter(task => task.status === 'miss').length;
-                const totalProcessedTasks = completedTasks + missedTasks;
-
-                // Nếu có tasks đã được xử lý (completed hoặc miss)
-                if (totalProcessedTasks > 0) {
-                    const completionRate = (completedTasks / totalProcessedTasks) * 100;
-                    productivity = Math.round(completionRate);
-                } else {
-                    // Nếu chưa có task nào được xử lý, năng suất = 0
-                    productivity = 0;
-                }
-            }
+            // Dùng hàm chung để tính completion rate theo ngày
+            const productivity = getCompletionRateForDate(date);
 
             // Format ngày tháng: T2, T3, T4, T5, T6, T7, CN
             const dayNames = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];

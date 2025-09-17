@@ -1,5 +1,16 @@
 /**
- * Task-related helper functions for styling, formatting, and calculations
+ * TASK HELPERS
+ * ============
+ * 
+ * File này chứa các utility functions hỗ trợ cho Task management:
+ * - Styling và color mapping cho categories, priorities, status
+ * - Text translation (tiếng Việt) cho UI elements
+ * - Tính toán thống kê tasks (total, completed, pending, overdue)
+ * - Filtering tasks theo search term và criteria
+ * - Icon mapping cho status display
+ * - Interface definitions cho TaskStats và TaskFilters
+ * 
+ * Sử dụng trong: Tất cả components liên quan đến tasks, Calendar page, Dashboard, Analytics
  */
 
 /**

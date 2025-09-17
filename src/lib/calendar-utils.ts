@@ -1,5 +1,16 @@
 /**
- * Calendar utility functions for date manipulation and formatting
+ * CALENDAR UTILITIES
+ * ==================
+ * 
+ * File này chứa các utility functions hỗ trợ cho Calendar page:
+ * - Xử lý và thao tác với ngày tháng
+ * - Navigation giữa các tuần (previous, next, current)
+ * - Tạo time slots cho calendar grid (24 giờ)
+ * - Format hiển thị ngày tháng
+ * - Kiểm tra overlap của tasks với time slots
+ * - Tạo array các ngày trong tuần
+ * 
+ * Sử dụng trong: src/app/user/calendar/page.tsx, src/hooks/useCalendar.ts, src/components/features/calendar/
  */
 
 /**

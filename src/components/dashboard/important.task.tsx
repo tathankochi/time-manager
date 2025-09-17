@@ -50,7 +50,7 @@ export function ImportantTask() {
                             <div className="flex items-center space-x-3">
                                 <button
                                     onClick={() => toggleTask(task.id)}
-                                    className={`rounded-full p-1 transition-colors ${task.completed
+                                    className={`rounded-full p-1 transition-colors ${task.status === 'completed'
                                         ? 'text-green-600 bg-green-100 dark:bg-green-900/20'
                                         : 'text-gray-400 hover:text-green-600'
                                         }`}
@@ -58,7 +58,7 @@ export function ImportantTask() {
                                     <CheckCircle2 className="h-4 w-4" />
                                 </button>
                                 <div>
-                                    <p className={`text-sm font-medium ${task.completed ? 'line-through text-gray-500' : ''
+                                    <p className={`text-sm font-medium ${task.status === 'completed' ? 'line-through text-gray-500' : ''
                                         }`}>
                                         {task.title}
                                     </p>

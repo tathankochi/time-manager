@@ -50,7 +50,7 @@ export const formatVietnameseTime = (date: Date): string => {
  */
 export const getUpcomingDeadlines = (tasks: any[], limit: number = 3): any[] => {
     return tasks
-        .filter(task => !task.completed && task.deadline)
+        .filter(task => task.status === 'todo')
         .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime())
         .slice(0, limit);
 };
@@ -74,7 +74,7 @@ export const calculateTodayCompletionRate = (todayTasks: any[]): {
     total: number;
     percentage: number;
 } => {
-    const completed = todayTasks.filter(t => t.completed).length;
+    const completed = todayTasks.filter(t => t.status === 'completed').length;
     const total = todayTasks.length;
     const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
 

@@ -1,3 +1,21 @@
+/**
+ * TASK CONTEXT
+ * ============
+ * 
+ * File này chứa React Context để quản lý state của Tasks:
+ * - Task interface definitions và types
+ * - TaskState interface cho Context
+ * - TaskProvider component để wrap app
+ * - useTask hook để sử dụng context
+ * - CRUD operations cho tasks (create, read, update, delete)
+ * - Pomodoro sessions management
+ * - Task filtering và statistics
+ * - Time conflict checking
+ * - Productivity score calculation
+ * 
+ * Sử dụng trong: Toàn bộ ứng dụng để quản lý tasks
+ */
+
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';

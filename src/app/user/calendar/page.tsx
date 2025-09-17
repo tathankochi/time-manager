@@ -11,48 +11,70 @@ import {
     SearchResults
 } from "@/components/features/calendar";
 
+/**
+ * Calendar Page Component
+ * Trang chính hiển thị lịch biểu tuần với các tính năng:
+ * - Hiển thị lịch tuần với tasks
+ * - Tìm kiếm và lọc tasks
+ * - Phân trang kết quả tìm kiếm
+ * - Tạo/sửa/xóa tasks
+ * - Thống kê tasks
+ * @returns JSX.Element
+ */
 export default function CalendarPage() {
+    // Lấy tất cả state và functions từ useCalendar hook
     const {
-        // State
-        currentWeekStart,
-        showTaskForm,
-        selectedTask,
-        showFilters,
-        showTaskDetail,
-        searchTerm,
-        filterStatus,
-        filterPriority,
-        filterCategory,
+        // ========== STATE ==========
+        currentWeekStart,        // Ngày bắt đầu của tuần hiện tại
+        showTaskForm,           // Hiển thị form tạo/sửa task
+        selectedTask,           // Task đang được chọn
+        showFilters,            // Hiển thị panel filters
+        showTaskDetail,         // Hiển thị modal chi tiết task
+        searchTerm,             // Từ khóa tìm kiếm
+        filterStatus,           // Filter theo status
+        filterPriority,         // Filter theo priority
+        filterCategory,         // Filter theo category
 
-        // Data
-        allWeekTasks,
-        taskStats,
-        filteredTasks,
+        // ========== DATA ==========
+        allWeekTasks,           // Tất cả tasks của tuần hiện tại
+        taskStats,              // Thống kê tasks
+        filteredTasks,          // Tasks đã filter và phân trang
+        allFilteredTasks,       // Tất cả tasks đã filter (chưa phân trang)
 
-        // Navigation
-        goToCurrentWeek,
-        goToPreviousWeek,
-        goToNextWeek,
+        // ========== PAGINATION ==========
+        currentPage,            // Trang hiện tại
+        totalPages,             // Tổng số trang
+        itemsPerPage,           // Số items per page
 
-        // Task handlers
-        handleTaskClick,
-        handleEditTask,
-        handleCloseTaskForm,
-        handleCloseTaskDetail,
-        handleDeleteTask,
-        handleTaskStatusChange,
+        // ========== NAVIGATION ==========
+        goToCurrentWeek,        // Chuyển về tuần hiện tại
+        goToPreviousWeek,       // Chuyển về tuần trước
+        goToNextWeek,           // Chuyển về tuần sau
 
-        // Setters
-        setShowTaskForm,
-        setSearchTerm,
-        setShowFilters,
-        setFilterStatus,
-        setFilterPriority,
-        setFilterCategory
+        // ========== TASK HANDLERS ==========
+        handleTaskClick,        // Xử lý click vào task
+        handleEditTask,         // Xử lý edit task
+        handleCloseTaskForm,    // Đóng form task
+        handleCloseTaskDetail,  // Đóng modal chi tiết
+        handleDeleteTask,       // Xóa task
+        handleTaskStatusChange, // Thay đổi status task
+
+        // ========== SETTERS ==========
+        setShowTaskForm,        // Set hiển thị form
+        setSearchTerm,          // Set từ khóa tìm kiếm
+        setShowFilters,         // Set hiển thị filters
+        setFilterStatus,        // Set filter status
+        setFilterPriority,      // Set filter priority
+        setFilterCategory,      // Set filter category
+
+        // ========== PAGINATION HANDLERS ==========
+        goToPage,               // Chuyển đến trang cụ thể
+        goToNextPage,           // Chuyển đến trang tiếp theo
+        goToPreviousPage        // Chuyển về trang trước
     } = useCalendar();
     return (
         <div className="space-y-6">
-            {/* Header */}
+            {/* ========== HEADER SECTION ========== */}
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Lịch biểu</h1>
@@ -60,6 +82,7 @@ export default function CalendarPage() {
                         Quản lý thời gian biểu và nhiệm vụ theo tuần
                     </p>
                 </div>
+                {/* Nút tạo task mới */}
                 <Button
                     onClick={() => setShowTaskForm(true)}
                     className="bg-blue-600 hover:bg-blue-700"
@@ -69,7 +92,8 @@ export default function CalendarPage() {
                 </Button>
             </div>
 
-            {/* Task Form Modal */}
+            {/* ========== MODAL SECTION ========== */}
+            {/* Modal form tạo/sửa task */}
             {showTaskForm && (
                 <TaskForm
                     task={selectedTask}
@@ -77,10 +101,12 @@ export default function CalendarPage() {
                 />
             )}
 
-            {/* Task Statistics */}
+            {/* ========== STATISTICS SECTION ========== */}
+            {/* Hiển thị thống kê tasks */}
             <TaskStatistics stats={taskStats} />
 
-            {/* Week Calendar */}
+            {/* ========== CALENDAR SECTION ========== */}
+            {/* Lịch tuần chính với navigation */}
             <WeekCalendar
                 currentWeekStart={currentWeekStart}
                 allWeekTasks={allWeekTasks}
@@ -90,7 +116,8 @@ export default function CalendarPage() {
                 onTaskClick={handleTaskClick}
             />
 
-            {/* Search and Filters */}
+            {/* ========== SEARCH & FILTER SECTION ========== */}
+            {/* Tìm kiếm và bộ lọc tasks */}
             <SearchAndFilters
                 searchTerm={searchTerm}
                 setSearchTerm={setSearchTerm}
@@ -104,13 +131,21 @@ export default function CalendarPage() {
                 setFilterCategory={setFilterCategory}
             />
 
-            {/* Search Results */}
+            {/* ========== SEARCH RESULTS SECTION ========== */}
+            {/* Kết quả tìm kiếm với phân trang */}
             <SearchResults
                 filteredTasks={filteredTasks}
+                allFilteredTasks={allFilteredTasks}
+                currentPage={currentPage}
+                totalPages={totalPages}
                 onTaskClick={handleTaskClick}
+                onPageChange={goToPage}
+                onPreviousPage={goToPreviousPage}
+                onNextPage={goToNextPage}
             />
 
-            {/* Task Detail Modal */}
+            {/* ========== TASK DETAIL MODAL ========== */}
+            {/* Modal chi tiết task */}
             {showTaskDetail && (
                 <TaskDetailModal
                     task={selectedTask}

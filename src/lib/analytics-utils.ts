@@ -1,5 +1,15 @@
 /**
- * Analytics utility functions for data processing and formatting
+ * ANALYTICS UTILITIES
+ * ===================
+ * 
+ * File này chứa các utility functions hỗ trợ cho Analytics page:
+ * - Xử lý và format dữ liệu thống kê
+ * - Mapping icons cho priority và category
+ * - Cấu hình charts và tooltips
+ * - Tính toán productivity scores và completion rates
+ * - Quản lý motivational quotes
+ * 
+ * Sử dụng trong: src/app/user/analytics/page.tsx, src/components/features/analytics/
  */
 
 /**
@@ -129,5 +139,5 @@ export const getTooltipConfig = () => ({
 export const getBarConfig = () => ({
     dataKey: "productivity",
     fill: "#3B82F6",
-    radius: [4, 4, 0, 0]
+    radius: [4, 4, 0, 0] as [number, number, number, number]
 });

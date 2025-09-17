@@ -1,5 +1,17 @@
 /**
- * Profile utility functions for user data formatting and validation
+ * PROFILE UTILITIES
+ * =================
+ * 
+ * File này chứa các utility functions hỗ trợ cho Profile page:
+ * - Xử lý và format dữ liệu user profile
+ * - Validation form data (tên, trường, ngày sinh, chuyên ngành)
+ * - Tạo initials từ tên đầy đủ
+ * - Format ngày tháng theo định dạng Việt Nam
+ * - Kiểm tra thay đổi trong profile data
+ * - Tạo default values và fallback text
+ * - Validation rules cho age và required fields
+ * 
+ * Sử dụng trong: src/app/user/profile/page.tsx, src/components/features/profile/, src/hooks/useProfile.ts
  */
 
 /**

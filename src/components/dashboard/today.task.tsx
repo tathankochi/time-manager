@@ -30,7 +30,7 @@ export function TodayTask() {
                 type: 'task',
                 duration: duration,
                 priority: task.priority,
-                completed: task.completed,
+                completed: task.status === 'completed',
                 id: task.id
             };
         })

@@ -10,7 +10,7 @@ interface TaskDetailModalProps {
     onClose: () => void;
     onEdit: (task: any) => void;
     onDelete: (taskId: string) => void;
-    onStatusChange: (taskId: string, status: string) => void;
+    onStatusChange: (taskId: string, status: 'todo' | 'miss' | 'completed') => void;
 }
 
 export function TaskDetailModal({

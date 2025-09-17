@@ -1,3 +1,20 @@
+/**
+ * USER CONTEXT
+ * ============
+ * 
+ * File này chứa React Context để quản lý state của User:
+ * - User interface definitions và types
+ * - UserContextType interface cho Context
+ * - UserProvider component để wrap app
+ * - useUser hook để sử dụng context
+ * - Authentication state management
+ * - User profile data (name, email, university, etc.)
+ * - Auto-login từ localStorage
+ * - Logout functionality với redirect
+ * 
+ * Sử dụng trong: Toàn bộ ứng dụng để quản lý user authentication và profile
+ */
+
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';

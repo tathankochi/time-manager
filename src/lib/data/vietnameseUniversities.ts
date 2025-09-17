@@ -1,4 +1,17 @@
-// Vietnamese universities data - shared across the application
+/**
+ * VIETNAMESE UNIVERSITIES DATA
+ * ============================
+ * 
+ * File này chứa danh sách các trường đại học Việt Nam:
+ * - Danh sách đầy đủ các trường đại học công lập và tư thục
+ * - Bao gồm các trường đại học quốc gia, khu vực, và địa phương
+ * - Có thêm option "Khác" cho các trường không có trong danh sách
+ * - Được sắp xếp theo thứ tự alphabet và tầm quan trọng
+ * 
+ * Sử dụng trong: Profile form để user chọn trường đại học
+ * Components: src/components/features/profile/ProfileForm.tsx
+ */
+
 export const vietnameseUniversities = [
     'Đại học Quốc gia Hà Nội',
     'Đại học Quốc gia TP.HCM',
